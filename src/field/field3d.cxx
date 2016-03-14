@@ -2568,7 +2568,7 @@ memblock3d* Field3D::free_block = NULL;
 /// Get a new block of data, either from free list or allocate
 memblock3d *Field3D::newBlock() const {
   memblock3d *nb;
-#pragma omp critical
+//#pragma omp critical
   {
     if(free_block != NULL) {
       // just pop off the top of the stack
@@ -2623,7 +2623,7 @@ memblock3d *Field3D::newBlock() const {
 
 /// Makes sure data is allocated and only referenced by this object
 void Field3D::allocData() const {
-#pragma omp critical (alloc)
+///#pragma omp critical (alloc)
   {
     /// Check if any data associated with this object
     if(block != (memblock3d*) NULL) {

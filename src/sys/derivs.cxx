@@ -1208,9 +1208,9 @@ const Field3D applyXdiff(const Field3D &var, deriv_func func, inner_boundary_der
   reverse_start_index(&bx, RGN_NOX);
   bindex bxend = bx; 
 #ifdef _OPENMP
+#pragma omp parallel for
   for (int jx=bxstart.jx; jx <= bxend.jx; jx++){
     for (int jy=bxstart.jy; jy <= bxend.jy; jy++){
-#pragma omp parallel for
       for (int jz=bxstart.jz; jz <= bxend.jz; jz++){
         stencil s;
         bindex bxlocal;
@@ -1436,9 +1436,9 @@ const Field3D applyYdiff(const Field3D &var, deriv_func func, inner_boundary_der
   reverse_start_index(&bx, RGN_NOBNDRY);
   bindex bxend = bx; 
 #ifdef _OPENMP
+#pragma omp parallel for
   for (int jx=bxstart.jx; jx <= bxend.jx; jx++){
     for (int jy=bxstart.jy; jy <= bxend.jy; jy++){
-#pragma omp parallel for
       for (int jz=bxstart.jz; jz <= bxend.jz; jz++){
         stencil s;
         bindex bxlocal;
@@ -1544,38 +1544,38 @@ const Field3D applyZdiff(const Field3D &var, deriv_func func, BoutReal dd, CELL_
   result.allocate(); // Make sure data allocated
   BoutReal ***r = result.getData();
   
-///#ifdef _OPENMP
-///  // Parallel version
-///  
-///  int ny = mesh->yend-mesh->ystart+1;
-///  int ncz = mesh->ngz-1;
-///  #pragma omp parallel for
-///  for(int j=0;j<mesh->ngx*ny*ncz;j++) {
-///    int jz = j % (mesh->ngz-1);
-///    int rem = j / (mesh->ngz-1);
-///    int jy = (rem % ny) + mesh->ystart; 
-///    int jx = rem / ny;
-///    
-///    bindex bx;
-///    bx.jx=jx; bx.jy=jy; bx.jz=jz;
-///    bx.jzp  = (bx.jz+1)%ncz;
-///    bx.jzm  = (bx.jz+ncz-1)%ncz;
-///    bx.jz2p = (bx.jzp+1)%ncz;
-///    bx.jz2m = (bx.jzm+ncz-1)%ncz;
-///    stencil s;
-///    var.setZStencil(s, bx, loc);
-///    r[jx][jy][jz] = func(s) / dd;
-///  }
-///#else
   bindex bx;
-
-  start_index(&bx, RGN_NOZ);
   stencil s;
+
+#ifdef _OPENMP
+  // Parallel version
+  
+  int ny = mesh->yend-mesh->ystart+1;
+  int ncz = mesh->ngz-1;
+  #pragma omp parallel for
+  for(int j=0;j<mesh->ngx*ny*ncz;j++) {
+    int jz = j % (mesh->ngz-1);
+    int rem = j / (mesh->ngz-1);
+    int jy = (rem % ny) + mesh->ystart; 
+    int jx = rem / ny;
+    
+    bindex bx;
+    bx.jx=jx; bx.jy=jy; bx.jz=jz;
+    bx.jzp  = (bx.jz+1)%ncz;
+    bx.jzm  = (bx.jz+ncz-1)%ncz;
+    bx.jz2p = (bx.jzp+1)%ncz;
+    bx.jz2m = (bx.jzm+ncz-1)%ncz;
+    stencil s;
+    var.setZStencil(s, bx, loc);
+    r[jx][jy][jz] = func(s) / dd;
+  }
+#else
+  start_index(&bx, RGN_NOZ);
   do {
     var.setZStencil(s, bx, loc);
     r[bx.jx][bx.jy][bx.jz] = func(s) / dd;
   }while(next_index3(&bx));
-///#endif
+#endif
 
   if (mesh->freeboundary_xin && mesh->firstX() && !mesh->periodicX) {
     for (bx.jx=mesh->xstart-1; bx.jx>=0; bx.jx--)
