@@ -461,24 +461,24 @@ const Field3D Grad2_par2(const Field3D &f, CELL_LOC outloc) {
 
 	Field2D sg;
 	Field3D result, r2;
-#pragma omp parallel sections
-	{
-#pragma omp section
-		{
+///#pragma omp parallel sections
+///	{
+///#pragma omp section
+///		{
 			sg = sqrt(mesh->g_22);
 			sg = DDY(1./sg) / sg;
-		}
+///		}
 		if (sg.getLocation() != outloc) {
 			mesh->communicate(sg);
 			sg = interp_to(sg, outloc);
 		}
-    
-#pragma omp section
+///    
+///#pragma omp section
 		result = DDY(f,outloc);
     
-#pragma omp section
+///#pragma omp section
 		r2 = D2DY2(f,outloc)/interp_to(mesh->g_22,outloc);
-	}
+///	}
 	result = sg*result + r2;
   
 #ifdef TRACK
@@ -581,6 +581,7 @@ const Field3D Delp2(const Field3D &f, BoutReal zsmooth) {
 		for(int jx=0;jx<mesh->ngx;jx++)
 			ZFFT(fd[jx][jy], mesh->zShift(jx, jy), ft[jx]);
 
+		Laplacian::defaultInstance();
 		// Loop over kz
 #pragma omp parallel for
 		for(int jz=0;jz<=ncz/2;jz++) {
