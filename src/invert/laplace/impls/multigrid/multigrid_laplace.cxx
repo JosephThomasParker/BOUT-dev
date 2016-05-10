@@ -472,36 +472,51 @@ void LaplaceMultigrid::generateMatrixF(int level) {
   // Set (fine-level) matrix entries
 
   int i2,k2;
+  BoutReal ***Ad=A.getData();
+  BoutReal ***C1d=C1.getData();
+  BoutReal ***C2d=C2.getData();
+  BoutReal ***Dd=D.getData();
 
-
+//#pragma omp parallel for
   for (int i=1; i<lnx[level]+1; i++) {
     i2 = i-1+mesh->xstart;
+    BoutReal meshdx  = mesh->dx[i2][yindex];
+    BoutReal meshG1 = mesh->G1[i2][yindex];
+    BoutReal meshG3 = mesh->G3[i2][yindex];
+    BoutReal meshg11 = mesh->g11[i2][yindex];
+    BoutReal meshg13 = mesh->g13[i2][yindex];
+    BoutReal meshg33 = mesh->g33[i2][yindex];
+    BoutReal *C1c=C2d[i2][yindex];
+    BoutReal *C2m=C2d[i2-1][yindex], *C2c=C2d[i2][yindex], *C2p=C2d[i2+1][yindex];
+    BoutReal *Dc =Dd[i2][yindex];
     for (int k=1; k<lnz[level]+1; k++) {
       k2 = k-1;
       int k2p  = (k2+1)%Nz_global;
       int k2m  = (k2+Nz_global-1)%Nz_global;
       
-      BoutReal ddx_C = (C2[i2+1][yindex][k2] - C2[i2-1][yindex][k2])/2./mesh->dx[i2][yindex]/C1[i2][yindex][k2];
-      BoutReal ddz_C = (C2[i2][yindex][k2p] - C2[i2][yindex][k2m]) /2./mesh->dz/C1[i2][yindex][k2];
+      //BoutReal ddx_C = (C2[i2+1][yindex][k2] - C2[i2-1][yindex][k2])/2./mesh->dx[i2][yindex]/C1[i2][yindex][k2];
+      //BoutReal ddz_C = (C2[i2][yindex][k2p] - C2[i2][yindex][k2m]) /2./mesh->dz/C1[i2][yindex][k2];
+      BoutReal ddx_C = (C2p[k2] - C2m[k2])/2./meshdx/C1c[k2];
+      BoutReal ddz_C = (C2c[k2p] - C2c[k2m]) /2./mesh->dz/C1c[k2];
       
-      BoutReal ddx = D[i2][yindex][k2]*mesh->g11[i2][yindex]/mesh->dx[i2][yindex]/mesh->dx[i2][yindex]; 
+      BoutReal ddx = Dc[k2]*meshg11/meshdx/meshdx; 
                // coefficient of 2nd derivative stencil (x-direction)
       
-      BoutReal ddz = D[i2][yindex][k2]*mesh->g33[i2][yindex]/mesh->dz/mesh->dz; 
+      BoutReal ddz = Dc[k2]*meshg33/mesh->dz/mesh->dz; 
               // coefficient of 2nd derivative stencil (z-direction)
       
-      BoutReal dxdz = D[i2][yindex][k2]*mesh->g13[i2][yindex]/mesh->dx[i2][yindex]/mesh->dz/2.; 
+      BoutReal dxdz = Dc[k2]*meshg13/meshdx/mesh->dz/2.; 
               // coefficient of mixed derivative stencil (could assume zero, at least initially, 
               // if easier; then check this is true in constructor)
       
-      BoutReal dxd = (D[i2][yindex][k2]*2.*mesh->G1[i2][yindex]
-        + mesh->g11[i2][yindex]*ddx_C
-        + mesh->g13[i2][yindex]*ddz_C // (could assume zero, at least initially, if easier; then check this is true in constructor)
-      )/mesh->dx[i2][yindex]; // coefficient of 1st derivative stencil (x-direction)
+      BoutReal dxd = (Dc[k2]*2.*meshG1
+        + meshg11*ddx_C
+        + meshg13*ddz_C // (could assume zero, at least initially, if easier; then check this is true in constructor)
+      )/meshdx; // coefficient of 1st derivative stencil (x-direction)
       
-      BoutReal dzd = (D[i2][yindex][k2]*2.*mesh->G3[i2][yindex]
-        + mesh->g33[i2][yindex]*ddz_C
-        + mesh->g13[i2][yindex]*ddx_C // (could assume zero, at least initially, if easier; then check this is true in constructor)
+      BoutReal dzd = (Dc[k2]*2.*meshG3
+        + meshg33*ddz_C
+        + meshg13*ddx_C // (could assume zero, at least initially, if easier; then check this is true in constructor)
       )/mesh->dz; // coefficient of 1st derivative stencil (z-direction)
       
       int ic = i*(lnz[level]+2)+k;
