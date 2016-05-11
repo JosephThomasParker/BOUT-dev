@@ -1,0 +1,4 @@
+Tests the ZFFT Fourier transform (in Z) on a varying number
+of processors. First runs on a single processor, then checks that
+the result is independent of processor number
+
