@@ -10,10 +10,11 @@
 # denotes the end of a fold
 __authors__ = 'Michael Loeiten'
 __email__   = 'mmag@fysik.dtu.dk'
-__version__ = '1.0221'
-__date__    = '2016.03.15'
+__version__ = '1.0234'
+__date__    = '2016.05.13'
 
 import os
+import sys
 import re
 import itertools
 import glob
@@ -473,8 +474,7 @@ class basic_runner(object):
 
         # We check that the given combination of nx and ny is
         # possible to perform with the given nproc
-        if (self._nx is not None) and (self._ny is not None):
-            self._get_correct_domain_split()
+        self._get_correct_domain_split()
 
         # Get the combinations of the member functions
         possibilities = self._get_possibilities()
@@ -1265,12 +1265,12 @@ class basic_runner(object):
                         self._series_add[index] = tuple(self._series_add[index])
 
             # Collect all second indices
-            second_indices = [elems[2] for elems in self._series_add]
+            third_indicies = [elems[2] for elems in self._series_add]
             # Find the length of the second indices
-            lengths = [len(elem) for elem in second_indices\
+            lengths = [len(elem) for elem in third_indicies\
                        if (type(elem)!=str and type(elem)!=dict)]
             # Check if any string or dicts were given
-            if len(second_indices) != len(lengths):
+            if len(third_indicies) != len(lengths):
                 message  = "series_add is on the wrong form.\n"
                 message += "series_add should be on the form\n"
                 message += "series_add=\ \n"
@@ -1290,7 +1290,7 @@ class basic_runner(object):
             # of value
             # stackoverflow.com/questions/3844801/check-if-all-elements-in-a-list-are-identical
             if not(lengths.count(lengths[0]) == len(lengths)):
-                message = "The length of the second index of the elements"+\
+                message = "The length of the third index of the elements"+\
                           " of series_add must be the same"
                 self._errors.append("TypeError")
                 raise TypeError(message)
@@ -1487,19 +1487,133 @@ class basic_runner(object):
 
 #{{{_get_correct_domain_split
     def _get_correct_domain_split(self):
-        """Checks that the grid can be split in the correct number of
-        processors. If not, vary the number of points until value is found."""
+        """
+        Checks that the grid can be split in the correct number of
+        processors.
+
+        If not, vary the number of points until value is found.
+        """
+
+        # We need to find options in BOUT.inp. We use BOUTOption for this
+        # Object initialization
+        myOpts = BOUTOptions(self._directory)
+
+        if (self._nx is None) and (self._ny is None):
+            #{{{ Set local_nx and local_ny from input
+            # If nx and ny is a function of MXG and MYG
+            if self._MXG is None:
+                try:
+                    MXG = eval(myOpts.root['MXG'])
+                except KeyError:
+                    try:
+                        MXG = eval(myOpts.root['mxg'])
+                    except KeyError:
+                        message  = "Could not find 'MXG' or 'mxg' "
+                        message += "in the input file. "
+                        message += "Setting MXG = 2"
+                        self._warning_printer(message)
+                        self._warnings.append(message)
+                        MXG = 2
+            else:
+                MXG = self._MXG
+            if self._MYG is None:
+                try:
+                    MYG = eval(myOpts.root['MYG'])
+                except KeyError:
+                    try:
+                        MYG = eval(myOpts.root['myg'])
+                    except KeyError:
+                        message  = "Could not find 'MYG' or 'myg' "
+                        message += "in the input file. "
+                        message += "Setting MYG = 2"
+                        self._warning_printer(message)
+                        self._warnings.append(message)
+                        MYG = 2
+            else:
+                MYG = self._MYG
+
+            # Set the local nx value
+            try:
+                local_nx = [eval(myOpts.mesh['nx'])]
+            except NameError:
+                message  = "Could not evaluate\n"
+                message += myOpts.mesh['nx']
+                message += "\nfound nx in mesh in the input file."
+                raise RuntimeError(message)
+
+            # Set the local ny value
+            try:
+                local_ny = [eval(myOpts.mesh['ny'])]
+            except NameError:
+                message  = "Could not evaluate\n"
+                message += myOpts.mesh['ny']
+                message += "\nfound ny in mesh in the input file."
+                raise RuntimeError(message)
+            #}}}
+        elif (self._nx is None):
+            #{{{ Set local_nx from input
+            # ny is given, so we only need to find nx
+            local_ny = self._ny
+            # If nx and ny is a function of MXG and MYG
+            if self._MXG is None:
+                MXG = eval(myOpts.root['MXG'])
+            else:
+                MXG = self._MXG
+
+            # Set the local nx value
+            try:
+                local_nx = [eval(myOpts.mesh['nx'])]
+            except NameError:
+                message  = "Could not evaluate\n"
+                message += myOpts.mesh['nx']
+                message += "\nfound nx in mesh in the input file."
+                raise RuntimeError(message)
+
+            # Get the same length on nx and ny
+            local_nx = local_nx * len(local_ny)
+            #}}}
+        elif (self._ny is None):
+            #{{{ Set local_ny from input
+            # nx is given, so we only need to find ny
+            local_nx = self._nx
+            # If nx and ny is a function of MXG and MYG
+            if self._MYG is None:
+                MYG = eval(myOpts.root['MYG'])
+            else:
+                MYG = self._MYG
+
+            # Set the local nx value
+            try:
+                local_ny = [eval(myOpts.mesh['ny'])]
+            except NameError:
+                message  = "Could not evaluate\n"
+                message += myOpts.mesh['ny']
+                message += "\nfound ny in mesh in the input file."
+                raise RuntimeError(message)
+
+            # Get the same length on nx and ny
+            local_ny = local_ny * len(local_nx)
+            #}}}
+        else:
+            local_nx = self._nx
+            local_ny = self._ny
+
 
         #{{{First we check if self._MXG is given
         if self._MXG is None:
-            # We need to find MXG in BOUT.inp. We use BOUTOption for
-            # this
-            # Object initialization
-            myOpts = BOUTOptions(self._directory)
-            # Get MXG as string
-            local_MXG = myOpts.root['MXG']
-            # Evaluate the string
-            local_MXG = eval(local_MXG)
+            # Get MXG as string, and evaluate it
+            try:
+                local_MXG = eval(myOpts.root['MXG'])
+            except KeyError:
+                try:
+                    local_MXG = eval(myOpts.root['mxg'])
+                except KeyError:
+                    message  = "Could not find 'MXG' or 'mxg' "
+                    message += "in the input file. "
+                    message += "Setting MXG = 2"
+                    self._warning_printer(message)
+                    self._warnings.append(message)
+                    local_MXG = 2
         else:
             local_MXG = self._MXG
         #}}}
@@ -1510,9 +1624,9 @@ class basic_runner(object):
         print("\nChecking the grid split for the meshes\n")
         if self._NXPE is None:
             #{{{ If NXPE is not set
-            for size_nr in range(len(self._nx)):
-                print("Checking nx=" + str(self._nx[size_nr]) +\
-                      " and ny=" + str(self._ny[size_nr]))
+            for size_nr in range(len(local_nx)):
+                print("Checking nx=" + str(local_nx[size_nr]) +\
+                      " and ny=" + str(local_ny[size_nr]))
                 # Check to see if succeeded
                 init_split_found = False
                 cur_split_found  = False
@@ -1527,23 +1641,25 @@ class basic_runner(object):
                     # BOUT++ (see boutmesh.cxx under
                     # if(options->isSet("NXPE")))
                     for i in range(1, self._nproc+1, 1):
-                        MX = self._nx[size_nr] - 2*local_MXG
+                        MX = local_nx[size_nr] - 2*local_MXG
                         # self._nproc is called NPES in boutmesh
                         if (self._nproc % i == 0) and \
                            (MX % i == 0) and \
-                           (self._ny[size_nr] % (self._nproc/i) == 0):
+                           (local_ny[size_nr] % (self._nproc/i) == 0):
                             # If the test passes
                             cur_split_found = True
 
                     # Check if cur_split_found is true, eventually
                     # update the add_number
-                    add_number, produce_warning = self._check_cur_split_found(\
-                                                             cur_split_found,\
-                                                             produce_warning,\
-                                                             add_number,\
-                                                             size_nr,\
-                                                             using_nx = True,\
-                                                             using_ny = True)
+                    local_nx, local_ny, add_number, produce_warning\
+                        = self._check_cur_split_found(cur_split_found,\
+                                                      produce_warning,\
+                                                      add_number     ,\
+                                                      size_nr        ,\
+                                                      local_nx       ,\
+                                                      local_ny       ,\
+                                                      using_nx = True,\
+                                                      using_ny = True)
 
 
                     #{{{ Check if the split was found the first go.
@@ -1558,15 +1674,24 @@ class basic_runner(object):
                 #}}}
 
                 # Check if initial split succeeded
-                self._check_init_split_found(init_split_found, size_nr,\
-                                             test_nx = True, test_ny = True,
+                self._check_init_split_found(init_split_found,\
+                                             size_nr         ,\
+                                             local_nx        ,\
+                                             local_ny        ,\
+                                             test_nx = True  ,\
+                                             test_ny = True  ,\
                                              produce_warning = produce_warning)
             #}}}
         else:
             #{{{ If NXPE is set
             # Check if NXPE and NYPE is set consistently with nproc
-            self._check_NXPE_or_NYPE(type_txt = 'NXPE', local_MXG = local_MXG)
-            self._check_NXPE_or_NYPE(type_txt = 'NYPE')
+            self._check_NXPE_or_NYPE(local_nx          ,\
+                                     local_ny          ,\
+                                     type_str = 'NXPE' ,\
+                                     local_MXG = local_MXG)
+            self._check_NXPE_or_NYPE(local_nx        ,\
+                                     local_ny        ,\
+                                     type_str = 'NYPE')
             #}}}
 #}}}
 
@@ -2179,10 +2304,15 @@ class basic_runner(object):
 
 #{{{ Functions called by _get_correct_domain_split
     #{{{_check_cur_split_found
-    def _check_cur_split_found(self, cur_split_found,\
+    def _check_cur_split_found(self           ,\
+                              cur_split_found ,\
                                produce_warning,\
-                               add_number, size_nr,\
-                               using_nx = None, using_ny = None):
+                               add_number     ,\
+                               size_nr        ,\
+                               local_nx       ,\
+                               local_ny       ,\
+                               using_nx = None,\
+                               using_ny = None):
         #{{{docstring
         """
         Checks if the current split is found.
@@ -2194,11 +2324,17 @@ class basic_runner(object):
                                 found
         produce_warning     -   if a warning should be produced
         add_number          -   the number added to nx and/or ny
+        local_nx            -   List of values of nx (a local value is
+                                used in order not to alter self._nx)
+        local_ny            -   List of values of ny (a local value is
+                                used in order not to alter self._ny)
         size_nr             -   index of the current nx and/or ny
         using_nx            -   if add_number should be added to nx
         using_ny            -   if add_number should be added to ny
 
         Output:
+        local_nx            -   List of values of nx
+        local_ny            -   List of values of ny
         add_number          -   the number to eventually be added the
                                 next time
         produce_warning     -   whether or not a warning should be
@@ -2211,12 +2347,25 @@ class basic_runner(object):
             # Produce a warning
             produce_warning = True
             if using_nx:
-                self._nx[size_nr] += add_number
+                local_nx[size_nr] += add_number
             if using_ny:
-                self._ny[size_nr] += add_number
+                local_ny[size_nr] += add_number
 
-            print("Mismatch, trying "+ str(self._nx[size_nr]) +\
-                  "*" + str(self._ny[size_nr]))
+            print("Mismatch, trying "+ str(local_nx[size_nr]) +\
+                  "*" + str(local_ny[size_nr]))
+
+            # FIXME: This is a crude approach as we are adding one to
+            #        both nx and ny
+            #        Consider: Something like this
+            #        nx+1   ny
+            #        nx     ny+1
+            #        nx-1   ny
+            #        nx     ny-1
+            #        nx+2   ny
+            #        nx     ny+2
+            #        nx-2   ny
+            #        nx     ny-2
+            #        ...
             add_number = (-1)**(abs(add_number))\
                          *(abs(add_number) + 1)
         else:
@@ -2224,12 +2373,17 @@ class basic_runner(object):
             if not(produce_warning):
                 produce_warning = False
 
-        return add_number, produce_warning
+        return local_nx, local_ny, add_number, produce_warning
     #}}}
 
     #{{{_check_init_split_found
-    def _check_init_split_found(self, init_split_found, size_nr,\
-                                test_nx = None, test_ny = None,\
+    def _check_init_split_found(self            ,\
+                                init_split_found,\
+                                size_nr         ,\
+                                local_nx        ,\
+                                local_ny        ,\
+                                test_nx = None  ,\
+                                test_ny = None  ,\
                                 produce_warning = None):
         #{{{docstring
         """
@@ -2241,6 +2395,10 @@ class basic_runner(object):
                                 split was found on the first trial
         size_nr             -   the index of the current nx, ny or NXPE
                                 under consideration
+        local_nx            -   List of values of nx (a local value is
+                                used in order not to alter self._nx)
+        local_ny            -   List of values of ny (a local value is
+                                used in order not to alter self._ny)
         test_nx             -   whether or not the test was run on nx
         test_ny             -   whether or not the test was run on ny
         produce_warning     -   whether or not a warning should be
@@ -2275,15 +2433,19 @@ class basic_runner(object):
                                " so that it can be split with the"+\
                                " current number of nproc"
                     raise RuntimeError(message)
+            else:
+                # Set nx and ny
+                self._nx = local_nx
+                self._ny = local_ny
         #}}}
 
         #{{{ When the good value is found
         print("Successfully found the following good values for the mesh:")
         message = ''
         if test_nx:
-            message += "nx = " + str(self._nx[size_nr]) + " "
+            message += "nx = " + str(local_nx[size_nr]) + " "
         if test_ny:
-            message += "ny = " + str(self._ny[size_nr])
+            message += "ny = " + str(local_ny[size_nr])
 
         print(message + "\n")
         #}}}
@@ -2297,27 +2459,36 @@ class basic_runner(object):
     #}}}
 
     #{{{_check_NXPE_or_NYPE
-    def _check_NXPE_or_NYPE(self, type_txt  = None,\
+    def _check_NXPE_or_NYPE(self                  ,\
+                            local_nx              ,\
+                            local_ny              ,\
+                            type_str        = None,\
                             local_MXG       = None,\
                             produce_warning = None\
                             ):
+        #{{{docstring
         """
         Check if NXPE or NYPE is consistent with nproc
 
         Input
+        local_nx        -   List of values of nx (a local value is used
+                            in order not to alter self._nx)
+        local_ny        -   List of values of ny (a local value is used
+                            in order not to alter self._ny)
         type_txt        -   can be either 'NXPE' or 'NYPE' and is specifying
                             whether NXPE or NYPE should be checked
         local_MXG       -   the current MXG
         produce_warning -   whether or not a warning should be produced
         """
+        #}}}
 
-        for size_nr in range(len(self._nx)):
+        for size_nr in range(len(local_nx)):
             # Check the type
             if type_txt == 'NXPE':
-                print("Checking nx = " + str(self._nx[size_nr]) +\
+                print("Checking nx = " + str(local_nx[size_nr]) +\
                       " with NXPE = " + str(self._NXPE[size_nr]))
             elif type_txt == 'NYPE':
-                print("Checking ny = " + str(self._ny[size_nr]) +\
+                print("Checking ny = " + str(local_ny[size_nr]) +\
                       " with NYPE = " + str(self._NYPE[size_nr]))
             # Check to see if succeeded
             init_split_found = False
@@ -2335,35 +2506,39 @@ class basic_runner(object):
                 # and
                 # if((MY % NYPE) != 0)
                 if type_txt == 'NXPE':
-                    MX = self._nx[size_nr] - 2*local_MXG
+                    MX = local_nx[size_nr] - 2*local_MXG
                     # self._nproc is called NPES in boutmesh
                     if (MX % self._NXPE[size_nr]) == 0:
                         # If the test passes
                         cur_split_found = True
                     # Check if cur_split_found is true, eventually
                     # update the add_number
-                    add_number, produce_warning = self._check_cur_split_found(\
-                                                             cur_split_found,\
-                                                             produce_warning,\
-                                                             add_number,\
-                                                             size_nr,\
-                                                             using_nx = True,\
-                                                             using_ny = False)
+                    local_nx, local_ny, add_number, produce_warning\
+                        = self._check_cur_split_found(cur_split_found,\
+                                                      produce_warning,\
+                                                      add_number     ,\
+                                                      size_nr        ,\
+                                                      local_nx       ,\
+                                                      local_ny       ,\
+                                                      using_nx = True,\
+                                                      using_ny = False)
                 elif type_txt == 'NYPE':
-                    MY = self._ny[size_nr]
+                    MY = local_ny[size_nr]
                     # self._nproc is called NPES in boutmesh
                     if (MY % self._NYPE[size_nr]) == 0:
                         # If the test passes
                         cur_split_found = True
                     # Check if cur_split_found is true, eventually
                     # update the add_number
-                    add_number, produce_warning = self._check_cur_split_found(\
-                                                             cur_split_found,\
-                                                             produce_warning,\
-                                                             add_number,\
-                                                             size_nr,\
-                                                             using_nx = True,\
-                                                             using_ny = False)
+                    local_nx, local_ny, add_number, produce_warning\
+                        = self._check_cur_split_found(cur_split_found ,\
+                                                      produce_warning ,\
+                                                      add_number      ,\
+                                                      size_nr         ,\
+                                                      local_nx        ,\
+                                                      local_ny        ,\
+                                                      using_nx = False,\
+                                                      using_ny = True)
 
                 #{{{ Check if the split was found the first go.
                 # This will be used if self_allow_size_modification is
@@ -2378,12 +2553,20 @@ class basic_runner(object):
 
             # Check if initial split succeeded
             if type_txt == 'NXPE':
-                self._check_init_split_found(init_split_found, size_nr,\
-                                             test_nx = True, test_ny = False,
+                self._check_init_split_found(init_split_found,\
+                                             size_nr         ,\
+                                             local_nx        ,\
+                                             local_ny        ,\
+                                             test_nx = True  ,\
+                                             test_ny = False ,\
                                              produce_warning = produce_warning)
             elif type_txt == 'NYPE':
-                self._check_init_split_found(init_split_found, size_nr,\
-                                             test_nx = False, test_ny = True,
+                self._check_init_split_found(init_split_found,\
+                                             size_nr         ,\
+                                             local_nx        ,\
+                                             local_ny        ,\
+                                             test_nx = False ,\
+                                             test_ny = True  ,\
                                              produce_warning = produce_warning)
     #}}}
 #}}}
@@ -2627,9 +2810,12 @@ class basic_runner(object):
                 extensions_w_cpy.extend(['cc' , 'cpp'  , 'cxx', 'C'  , 'c++',\
                                         'h'  , 'hpp'  , 'hxx', 'h++'])
 
-            # Additional files that will be copied to the destination
-            # folder
-            extensions = [extensions_w_cpy[:], has_extensions_w_cpy[:], 'restart.*']
+            # Python 3 syntax (not python 2 friendly)
+            # extensions = [*extensions_w_cpy, *has_extensions_w_cpy, 'restart.*']
+            extensions = extensions_w_cpy
+            for item in has_extensions_w_cpy:
+                extensions.append(item)
+            extensions.append('restart.*')
 
             if self._restart == "append":
                 extensions.append("dmp.*")
@@ -2982,8 +3168,6 @@ class basic_runner(object):
 #}}}
 #}}}
 
-
-
 #{{{class PBS_runner
 class PBS_runner(basic_runner):
 #{{{docstring
@@ -3328,7 +3512,9 @@ class PBS_runner(basic_runner):
 
         # Make the script
         python_tmp  = '#!/usr/bin/env python\n'
-        python_tmp += 'import os\n'
+        python_tmp += 'import os, sys\n'
+        # Set the python path
+        python_tmp += 'sys.path = '+str(sys.path)+'\n'
         # Import the post processing function
         python_tmp += 'from ' + function.__module__ +\
                       ' import ' + function.__name__ + '\n'
@@ -3604,8 +3790,6 @@ class PBS_runner(basic_runner):
 #}}}
 #}}}
 #}}}
-
-
 
 #{{{if __name__ == '__main__':
 if __name__ == '__main__':
