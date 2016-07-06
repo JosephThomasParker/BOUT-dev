@@ -1,5 +1,6 @@
+
 BOUT_TOP	= ../../..
 
-SOURCEC		= test_precon.cxx
+SOURCEC		= alfven.cxx
 
 include $(BOUT_TOP)/make.config
