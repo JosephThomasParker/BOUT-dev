@@ -1204,10 +1204,10 @@ const Field3D applyXdiff(const Field3D &var, deriv_func func, inner_boundary_der
   BoutReal ***r = result.getData();
 
   start_index(&bx, RGN_NOX);
+#ifdef _OPENMP
   bindex bxstart = bx; 
   reverse_start_index(&bx, RGN_NOX);
   bindex bxend = bx; 
-#ifdef _OPENMP
   for (int jx=bxstart.jx; jx <= bxend.jx; jx++){
     for (int jy=bxstart.jy; jy <= bxend.jy; jy++){
 #pragma omp parallel for
@@ -1226,18 +1226,13 @@ const Field3D applyXdiff(const Field3D &var, deriv_func func, inner_boundary_der
 
 #else
   stencil s;
-
-  for (bx.jx=bxstart.jx; bx.jx <= bxend.jx; bx.jx++){
-    for (bx.jy=bxstart.jy; bx.jy <= bxend.jy; bx.jy++){
-      for (bx.jz=bxstart.jz; bx.jz <= bxend.jz; bx.jz++){
-        calc_index(&bx);  
-        vs.setXStencil(s, bx, loc);
-        r[bx.jx][bx.jy][bx.jz] = func(s) / dd(bx.jx, bx.jy);
-      }
+  do {
+    for(bx.jz=0;bx.jz<mesh->ngz-1;bx.jz++) {
+      vs.setXStencil(s, bx, loc);
+      r[bx.jx][bx.jy][bx.jz] = func(s) / dd(bx.jx, bx.jy);
     }
-  }
-
-#endif  
+  }while(next_index2(&bx));
+#endif
 
 #ifdef CHECK
   // Mark boundaries as invalid
@@ -1454,17 +1449,13 @@ const Field3D applyYdiff(const Field3D &var, deriv_func func, inner_boundary_der
 
 #else 
   stencil s;
-
-  for (bx.jx=bxstart.jx; bx.jx <= bxend.jx; bx.jx++){
-    for (bx.jy=bxstart.jy; bx.jy <= bxend.jy; bx.jy++){
-      for (bx.jz=bxstart.jz; bx.jz <= bxend.jz; bx.jz++){
-        calc_index(&bx);  
-        var.setYStencil(s, bx, loc);
-        r[bx.jx][bx.jy][bx.jz] = func(s) / dd(bx.jx, bx.jy);
-      }
+  do {
+    //output.write("apply %d %d\n", bx.jx, bx.jy);
+    for(bx.jz=0;bx.jz<mesh->ngz-1;bx.jz++) {
+      var.setYStencil(s, bx, loc);
+      r[bx.jx][bx.jy][bx.jz] = func(s) / dd(bx.jx, bx.jy);
     }
-  }
-
+  }while(next_index2(&bx));
 #endif  
 
 #ifdef CHECK
@@ -1568,21 +1559,13 @@ const Field3D applyZdiff(const Field3D &var, deriv_func func, BoutReal dd, CELL_
 ///  }
 ///#else
   bindex bx;
-  start_index(&bx, RGN_NOZ);
-  bindex bxstart = bx; 
-  reverse_start_index(&bx, RGN_NOZ);
-  bindex bxend = bx; 
 
+  start_index(&bx, RGN_NOZ);
   stencil s;
-  for (bx.jx=bxstart.jx; bx.jx <= bxend.jx; bx.jx++){
-    for (bx.jy=bxstart.jy; bx.jy <= bxend.jy; bx.jy++){
-      for (bx.jz=bxstart.jz; bx.jz <= bxend.jz; bx.jz++){
-        calc_index(&bx);  
-        var.setZStencil(s, bx, loc);
-        r[bx.jx][bx.jy][bx.jz] = func(s) / dd;
-      }
-    }
-  }
+  do {
+    var.setZStencil(s, bx, loc);
+    r[bx.jx][bx.jy][bx.jz] = func(s) / dd;
+  }while(next_index3(&bx));
 ///#endif
 
   if (mesh->freeboundary_xin && mesh->firstX() && !mesh->periodicX) {
