@@ -1121,6 +1121,9 @@ const Field2D applyXdiff(const Field2D &var, deriv_func func, inner_boundary_der
   result.bndry_xin = result.bndry_xout = result.bndry_yup = result.bndry_ydown = false;
 #endif
 
+#ifdef _OPENMP 
+  stencil s; // only in scope for serial version
+#endif
   if (mesh->freeboundary_ydown) {
     for (RangeIterator it=mesh->iterateBndryLowerY(); !it.isDone(); it++)
       for (bx.jy=mesh->ystart-1; bx.jy>=0; bx.jy--) {
@@ -1194,38 +1197,55 @@ const Field3D applyXdiff(const Field3D &var, deriv_func func, inner_boundary_der
 
   start_index(&bx, RGN_NOX);
 #ifdef _OPENMP
-  bindex bxstart = bx; // Copy to avoid race condition on first index
-  bool workToDoGlobal; // Shared loop control
-  #pragma omp parallel
-  {
-    bindex bxlocal; // Index for each thread
-    stencil s;
-    bool workToDo;  // Does this thread have work to do?
-
-    #pragma omp single
-    {
-      // First index done by single thread
-      for(bxstart.jz=0;bxstart.jz<mesh->ngz-1;bxstart.jz++) {
-        vs.setXStencil(s, bxstart, loc);
-        r[bxstart.jx][bxstart.jy][bxstart.jz] = func(s) / dd(bxstart.jx, bxstart.jy);
+///  bindex bxstart = bx; // Copy to avoid race condition on first index
+///  bool workToDoGlobal; // Shared loop control
+///  #pragma omp parallel
+///  {
+///    bindex bxlocal; // Index for each thread
+///    stencil s;
+///    bool workToDo;  // Does this thread have work to do?
+///
+///    #pragma omp single
+///    {
+///      // First index done by single thread
+///      for(bxstart.jz=0;bxstart.jz<mesh->ngz-1;bxstart.jz++) {
+///        vs.setXStencil(s, bxstart, loc);
+///        r[bxstart.jx][bxstart.jy][bxstart.jz] = func(s) / dd(bxstart.jx, bxstart.jy);
+///      }
+///    }
+///
+///    do {
+///      #pragma omp critical
+///      {
+///        // Get the next index
+///        workToDo = next_index2(&bx); // Only in 2D
+///        bxlocal = bx; // Make a local copy
+///        workToDoGlobal = workToDo;
+///      }
+///      if(workToDo) { // Here workToDo could be different to workToDoGlobal
+///        for(bxlocal.jz=0;bxlocal.jz<mesh->ngz-1;bxlocal.jz++) {
+///          vs.setXStencil(s, bxlocal, loc);
+///          r[bxlocal.jx][bxlocal.jy][bxlocal.jz] = func(s) / dd(bxlocal.jx, bxlocal.jy);
+///        }
+///      }
+///    }while(workToDoGlobal);
+  bindex bxstart = bx; 
+  reverse_start_index(&bx, RGN_NOX);
+  bindex bxend = bx; 
+  for (int jx=bxstart.jx; jx <= bxend.jx; jx++){
+    for (int jy=bxstart.jy; jy <= bxend.jy; jy++){
+#pragma omp parallel for
+      for (int jz=bxstart.jz; jz <= bxend.jz; jz++){
+        stencil s;
+        bindex bxlocal;
+        bxlocal.jx = jx;
+        bxlocal.jy = jy;
+        bxlocal.jz = jz;
+        calc_index(&bxlocal);
+        vs.setXStencil(s, bxlocal, loc);
+        r[bxlocal.jx][bxlocal.jy][bxlocal.jz] = func(s) / dd(bxlocal.jx, bxlocal.jy);
       }
     }
-
-    do {
-      #pragma omp critical
-      {
-        // Get the next index
-        workToDo = next_index2(&bx); // Only in 2D
-        bxlocal = bx; // Make a local copy
-        workToDoGlobal = workToDo;
-      }
-      if(workToDo) { // Here workToDo could be different to workToDoGlobal
-        for(bxlocal.jz=0;bxlocal.jz<mesh->ngz-1;bxlocal.jz++) {
-          vs.setXStencil(s, bxlocal, loc);
-          r[bxlocal.jx][bxlocal.jy][bxlocal.jz] = func(s) / dd(bxlocal.jx, bxlocal.jy);
-        }
-      }
-    }while(workToDoGlobal);
   }
 #else
   stencil s;
@@ -1242,6 +1262,9 @@ const Field3D applyXdiff(const Field3D &var, deriv_func func, inner_boundary_der
   result.bndry_xin = result.bndry_xout = result.bndry_yup = result.bndry_ydown = false;
 #endif
 
+#ifdef _OPENMP 
+  stencil s; // only in scope for serial version
+#endif
   if (mesh->freeboundary_ydown) {
     for (RangeIterator it=mesh->iterateBndryLowerY(); !it.isDone(); it++)
       for (bx.jy=mesh->ystart-1; bx.jy>=0; bx.jy--)
@@ -1427,45 +1450,27 @@ const Field3D applyYdiff(const Field3D &var, deriv_func func, inner_boundary_der
   bindex bx;
 
   start_index(&bx, RGN_NOBNDRY);
-
-  /*
 #ifdef _OPENMP
-  // Parallel version
-  bindex bxstart = bx; // Copy to avoid race condition on first index
-  bool workToDoGlobal; // Shared loop control
-  #pragma omp parallel
-  {
-    bindex bxlocal; // Index for each thread
-    stencil s;
-    bool workToDo;  // Does this thread have work to do?
-
-    #pragma omp single
-    {
-      // First index done by single thread
-      for(bxstart.jz=0;bxstart.jz<mesh->ngz-1;bxstart.jz++) {
-        var.setYStencil(s, bxstart, loc);
-        r[bxstart.jx][bxstart.jy][bxstart.jz] = func(s) / dd[bxstart.jx][bxstart.jy];
+  bindex bxstart = bx; 
+  reverse_start_index(&bx, RGN_NOBNDRY);
+  bindex bxend = bx; 
+  for (int jx=bxstart.jx; jx <= bxend.jx; jx++){
+    for (int jy=bxstart.jy; jy <= bxend.jy; jy++){
+#pragma omp parallel for
+      for (int jz=bxstart.jz; jz <= bxend.jz; jz++){
+        stencil s;
+        bindex bxlocal;
+        bxlocal.jx = jx;
+        bxlocal.jy = jy;
+        bxlocal.jz = jz;
+        calc_index(&bxlocal);
+        var.setYStencil(s, bxlocal, loc);
+        r[bxlocal.jx][bxlocal.jy][bxlocal.jz] = func(s) / dd(bxlocal.jx, bxlocal.jy);
       }
     }
-
-    do {
-      #pragma omp critical
-      {
-        // Get the next index
-        workToDo = next_index2(&bx); // Only in 2D
-        bxlocal = bx; // Make a local copy
-        workToDoGlobal = workToDo;
-      }
-      if(workToDo) { // Here workToDo could be different to workToDoGlobal
-        for(bxlocal.jz=0;bxlocal.jz<mesh->ngz-1;bxlocal.jz++) {
-          var.setYStencil(s, bxlocal, loc);
-          r[bxlocal.jx][bxlocal.jy][bxlocal.jz] = func(s) / dd[bxlocal.jx][bxlocal.jy];
-        }
-      }
-    }while(workToDoGlobal);
   }
-#else
-  */
+
+#else 
   stencil s;
   do {
     //output.write("apply %d %d\n", bx.jx, bx.jy);
@@ -1474,13 +1479,16 @@ const Field3D applyYdiff(const Field3D &var, deriv_func func, inner_boundary_der
       r[bx.jx][bx.jy][bx.jz] = func(s) / dd(bx.jx, bx.jy);
     }
   }while(next_index2(&bx));
-  //#endif
+#endif
 
 #ifdef CHECK
   // Mark boundaries as invalid
   result.bndry_xin = result.bndry_xout = result.bndry_yup = result.bndry_ydown = false;
 #endif
 
+#ifdef _OPENMP 
+  stencil s; // only in scope for serial version
+#endif
   if (mesh->freeboundary_xin && mesh->firstX() && !mesh->periodicX) {
     for (bx.jx=mesh->xstart-1; bx.jx>=0; bx.jx--)
       for (bx.jy=mesh->ystart; bx.jy<=mesh->ystart; bx.jy++)
@@ -1550,29 +1558,29 @@ const Field3D applyZdiff(const Field3D &var, deriv_func func, BoutReal dd, CELL_
   result.allocate(); // Make sure data allocated
   BoutReal ***r = result.getData();
 
-#ifdef _OPENMP
-  // Parallel version
-
-  int ny = mesh->yend-mesh->ystart+1;
-  int ncz = mesh->ngz-1;
-  #pragma omp parallel for
-  for(int j=0;j<mesh->ngx*ny*ncz;j++) {
-    int jz = j % (mesh->ngz-1);
-    int rem = j / (mesh->ngz-1);
-    int jy = (rem % ny) + mesh->ystart;
-    int jx = rem / ny;
-
-    bindex bx;
-    bx.jx=jx; bx.jy=jy; bx.jz=jz;
-    bx.jzp  = (bx.jz+1)%ncz;
-    bx.jzm  = (bx.jz+ncz-1)%ncz;
-    bx.jz2p = (bx.jzp+1)%ncz;
-    bx.jz2m = (bx.jzm+ncz-1)%ncz;
-    stencil s;
-    var.setZStencil(s, bx, loc);
-    r[jx][jy][jz] = func(s) / dd;
-  }
-#else
+///#ifdef _OPENMP
+///  // Parallel version
+///
+///  int ny = mesh->yend-mesh->ystart+1;
+///  int ncz = mesh->ngz-1;
+///  #pragma omp parallel for
+///  for(int j=0;j<mesh->ngx*ny*ncz;j++) {
+///    int jz = j % (mesh->ngz-1);
+///    int rem = j / (mesh->ngz-1);
+///    int jy = (rem % ny) + mesh->ystart;
+///    int jx = rem / ny;
+///
+///    bindex bx;
+///    bx.jx=jx; bx.jy=jy; bx.jz=jz;
+///    bx.jzp  = (bx.jz+1)%ncz;
+///    bx.jzm  = (bx.jz+ncz-1)%ncz;
+///    bx.jz2p = (bx.jzp+1)%ncz;
+///    bx.jz2m = (bx.jzm+ncz-1)%ncz;
+///    stencil s;
+///    var.setZStencil(s, bx, loc);
+///    r[jx][jy][jz] = func(s) / dd;
+///  }
+///#else
   bindex bx;
 
   start_index(&bx, RGN_NOZ);
@@ -1581,7 +1589,7 @@ const Field3D applyZdiff(const Field3D &var, deriv_func func, BoutReal dd, CELL_
     var.setZStencil(s, bx, loc);
     r[bx.jx][bx.jy][bx.jz] = func(s) / dd;
   }while(next_index3(&bx));
-#endif
+///#endif
 
   if (mesh->freeboundary_xin && mesh->firstX() && !mesh->periodicX) {
     for (bx.jx=mesh->xstart-1; bx.jx>=0; bx.jx--)
