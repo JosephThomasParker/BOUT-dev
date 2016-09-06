@@ -9398,6 +9398,12 @@ then
   HAS_MUMPS="no"
 fi
 
+HAS_OPENMP="yes"
+if test "$OPENMP_CXXFLAGS" = ""
+then
+  HAS_OPENMP="no"
+fi
+
 if test "$PETSC" = ""
 then
   HAS_PETSC="no"
@@ -9447,6 +9453,8 @@ echo "  PDB support: $HAS_PDB" | tee -a config-build.log
 echo "  Hypre support: $HAS_HYPRE" | tee -a config-build.log
 
 echo "  MUMPS support: $HAS_MUMPS" | tee -a config-build.log
+
+echo "  OPENMP support: $HAS_OPENMP" | tee -a config-build.log
 
 echo ""
 echo
