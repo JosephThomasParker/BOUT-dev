@@ -1094,12 +1094,17 @@ const Field3D Mesh::applyXdiff(const Field3D &var, Mesh::deriv_func func, Mesh::
   
   start_index(&bx, RGN_NOX);
   stencil s;
-  do {
-    for(bx.jz=0;bx.jz<mesh->ngz-1;bx.jz++) {
-      var.setXStencil(s, bx, loc);
-      result(bx.jx,bx.jy,bx.jz) = func(s);
-    }
-  }while(next_index2(&bx));
+  //do {
+  //  for(bx.jz=0;bx.jz<mesh->ngz-1;bx.jz++) {
+  //    var.setXStencil(s, bx, loc);
+  //    result(bx.jx,bx.jy,bx.jz) = func(s);
+  //  }
+  //}while(next_index2(&bx));
+
+  for(DataIterator it = begin(var); !it.done() ; ++it){
+    var.setXStencil(s, it, loc);
+    result(it.x,it.y,it.z) = func(s);
+  }
 
 #ifdef CHECK
   // Mark boundaries as invalid

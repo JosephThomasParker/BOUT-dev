@@ -245,6 +245,8 @@ class Field3D : public Field, public FieldData {
   void setYStencil(forward_stencil &fval, const bindex &bx, CELL_LOC loc = CELL_DEFAULT) const;
   void setYStencil(backward_stencil &fval, const bindex &bx, CELL_LOC loc = CELL_DEFAULT) const;
   void setZStencil(stencil &fval, const bindex &bx, CELL_LOC loc = CELL_DEFAULT) const;
+
+  void setXStencil(stencil &fval, const DataIterator &it, CELL_LOC loc = CELL_DEFAULT) const;
   
   // FieldData virtual functions
   

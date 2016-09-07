@@ -479,6 +479,42 @@ void Field3D::setXStencil(stencil &fval, const bindex &bx, CELL_LOC loc) const {
   }
 }
 
+void Field3D::setXStencil(stencil &fval, const DataIterator &it, CELL_LOC loc) const {
+  fval.jx = it.x;
+  fval.jy = it.y;
+  fval.jz = it.z;
+  
+#ifdef CHECK
+  // Check data set
+  if(data.empty())
+    throw BoutException("Field3D: Setting X stencil for empty data\n");
+#endif
+  
+  fval.c  = operator()(it.x,  it.y, it.z);
+  fval.p  = operator()(it.x+1, it.y, it.z);
+  fval.m  = operator()(it.x-1, it.y, it.z);
+  fval.pp = operator()(it.x+2, it.y, it.z);
+  fval.mm = operator()(it.x-2, it.y, it.z);
+
+  if(mesh->StaggerGrids && (loc != CELL_DEFAULT) && (loc != location)) {
+    // Non-centred stencil
+
+    if((location == CELL_CENTRE) && (loc == CELL_XLOW)) {
+      // Producing a stencil centred around a lower X value
+      fval.pp = fval.p;
+      fval.p  = fval.c;
+      
+    }else if(location == CELL_XLOW) {
+      // Stencil centred around a cell centre
+      
+      fval.mm = fval.m;
+      fval.m  = fval.c;
+    }
+    // Shifted in one direction -> shift in another
+    // Could produce warning
+  }
+}
+
 void Field3D::setXStencil(forward_stencil &fval, const bindex &bx, CELL_LOC loc) const
 {
   fval.jx = bx.jx;

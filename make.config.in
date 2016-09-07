@@ -19,7 +19,8 @@ BOUT_FLAGS		= $(CXXFLAGS) @CXXFLAGS@ @OPENMP_CXXFLAGS@
 
 # Specify the MPI C++ compiler in CXX
 
-CXX			= @MPICXX@
+#CXX			= @MPICXX@
+CXX			= scorep @MPICXX@
 CC                      = $(CXX)
 
 AR			= ar
