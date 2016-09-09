@@ -70,38 +70,80 @@ const Field3D interp_to(const Field3D &var, CELL_LOC loc)
     if((var.getLocation() == CELL_CENTRE) || (loc == CELL_CENTRE)) {
       // Going between centred and shifted
       
-      bindex bx;
+      bindex bx, bxstart, bxend;
       stencil s;
       CELL_LOC dir; 
-      
+
       // Get the non-centre location for interpolation direction
       dir = (loc == CELL_CENTRE) ? var.getLocation() : loc;
 
       switch(dir) {
       case CELL_XLOW: {
-	start_index(&bx, RGN_NOX);
-	do {
-	  var.setXStencil(s, bx, loc);
-	  d[bx.jx][bx.jy][bx.jz] = interp(s);
-	}while(next_index3(&bx));
+	///start_index(&bx, RGN_NOX);
+	///do {
+	///  var.setXStencil(s, bx, loc);
+	///  d[bx.jx][bx.jy][bx.jz] = interp(s);
+	///}while(next_index3(&bx));
+        start_index(&bxstart, RGN_NOX);
+        reverse_start_index(&bxend, RGN_NOX);
+        #pragma omp parallel private(bx,s)
+	{
+        for ( bx.jx=bxstart.jx; bx.jx <= bxend.jx; bx.jx++){
+          for ( bx.jy=bxstart.jy; bx.jy <= bxend.jy; bx.jy++){
+            for ( bx.jz=bxstart.jz; bx.jz <= bxend.jz; bx.jz++){
+              calc_index(&bx);
+	      var.setXStencil(s, bx, loc);
+	      d[bx.jx][bx.jy][bx.jz] = interp(s);
+	    }
+          }
+	}
+	}
 	break;
 	// Need to communicate in X
       }
       case CELL_YLOW: {
-	start_index(&bx, RGN_NOY);
-	do {
-	  var.setYStencil(s, bx, loc);
-	  d[bx.jx][bx.jy][bx.jz] = interp(s);
-	}while(next_index3(&bx));
+	//start_index(&bx, RGN_NOY);
+	//do {
+	//  var.setYStencil(s, bx, loc);
+	//  d[bx.jx][bx.jy][bx.jz] = interp(s);
+	//}while(next_index3(&bx));
+        start_index(&bxstart, RGN_NOY);
+        reverse_start_index(&bxend, RGN_NOY);
+        #pragma omp parallel private(bx,s)
+        {
+        for ( bx.jx=bxstart.jx; bx.jx <= bxend.jx; bx.jx++){
+          for ( bx.jy=bxstart.jy; bx.jy <= bxend.jy; bx.jy++){
+            for ( bx.jz=bxstart.jz; bx.jz <= bxend.jz; bx.jz++){
+              calc_index(&bx);
+	      var.setYStencil(s, bx, loc);
+	      d[bx.jx][bx.jy][bx.jz] = interp(s);
+	    }
+          }
+	}
+	}
 	break;
 	// Need to communicate in Y
       }
       case CELL_ZLOW: {
-	start_index(&bx, RGN_NOZ);
-	do {
-	  var.setZStencil(s, bx, loc);
-	  d[bx.jx][bx.jy][bx.jz] = interp(s);
-	}while(next_index3(&bx));
+	//start_index(&bx, RGN_NOZ);
+	//do {
+	//  var.setZStencil(s, bx, loc);
+	//  d[bx.jx][bx.jy][bx.jz] = interp(s);
+	//}while(next_index3(&bx));
+        start_index(&bxstart, RGN_NOZ);
+        reverse_start_index(&bxend, RGN_NOZ);
+        #pragma omp parallel private(bx,s)
+        {
+        for ( bx.jx=bxstart.jx; bx.jx <= bxend.jx; bx.jx++){
+          for ( bx.jy=bxstart.jy; bx.jy <= bxend.jy; bx.jy++){
+            for ( bx.jz=bxstart.jz; bx.jz <= bxend.jz; bx.jz++){
+              calc_index(&bx);
+	      var.setZStencil(s, bx, loc);
+	      d[bx.jx][bx.jy][bx.jz] = interp(s);
+	    }
+          }
+	}
+        }
 	break;
       }
       default: {

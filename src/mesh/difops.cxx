@@ -461,24 +461,24 @@ const Field3D Grad2_par2(const Field3D &f, CELL_LOC outloc) {
 
 	Field2D sg;
 	Field3D result, r2;
-#pragma omp parallel sections
-	{
-#pragma omp section
-		{
+///#pragma omp parallel sections
+///	{
+///#pragma omp section
+///		{
 			sg = sqrt(mesh->g_22);
 			sg = DDY(1./sg) / sg;
-		}
+///		}
 		if (sg.getLocation() != outloc) {
 			mesh->communicate(sg);
 			sg = interp_to(sg, outloc);
 		}
-    
-#pragma omp section
+///    
+///#pragma omp section
 		result = DDY(f,outloc);
     
-#pragma omp section
+///#pragma omp section
 		r2 = D2DY2(f,outloc)/interp_to(mesh->g_22,outloc);
-	}
+///	}
 	result = sg*result + r2;
   
 #ifdef TRACK
@@ -1392,33 +1392,36 @@ const Field3D bracket(const Field3D &f, const Field3D &g, BRACKET_METHOD method,
 			}
     
 			int ncz = mesh->ngz - 1;
-			for(int jx=mesh->xstart;jx<=mesh->xend;jx++)
-				for(int jy=mesh->ystart;jy<=mesh->yend;jy++)
-			for(int jz=0;jz<ncz;jz++) {
-				int jzp = (jz + 1) % ncz;
-				int jzm = (jz - 1 + ncz) % ncz;
+			#pragma omp parallel for
+			for(int jx=mesh->xstart;jx<=mesh->xend;jx++){
+				for(int jy=mesh->ystart;jy<=mesh->yend;jy++){
+					for(int jz=0;jz<ncz;jz++) {
+						int jzp = (jz + 1) % ncz;
+						int jzm = (jz - 1 + ncz) % ncz;
           
-				// J++ = DDZ(f)*DDX(g) - DDX(f)*DDZ(g)
-				BoutReal Jpp = 0.25*( (fs[jx][jy][jzp] - fs[jx][jy][jzm])*
-					(gs[jx+1][jy][jz] - gs[jx-1][jy][jz]) -
-						(fs[jx+1][jy][jz] - fs[jx-1][jy][jz])*
-							(gs[jx][jy][jzp] - gs[jx][jy][jzm]) )
-								/ (mesh->dx[jx][jy] * mesh->dz);
+						// J++ = DDZ(f)*DDX(g) - DDX(f)*DDZ(g)
+						BoutReal Jpp = 0.25*( (fs[jx][jy][jzp] - fs[jx][jy][jzm])*
+							(gs[jx+1][jy][jz] - gs[jx-1][jy][jz]) -
+								(fs[jx+1][jy][jz] - fs[jx-1][jy][jz])*
+									(gs[jx][jy][jzp] - gs[jx][jy][jzm]) )
+										/ (mesh->dx[jx][jy] * mesh->dz);
 
-				// J+x
-				BoutReal Jpx = 0.25*( gs[jx+1][jy][jz]*(fs[jx+1][jy][jzp]-fs[jx+1][jy][jzm]) -
-					gs[jx-1][jy][jz]*(fs[jx-1][jy][jzp]-fs[jx-1][jy][jzm]) -
-						gs[jx][jy][jzp]*(fs[jx+1][jy][jzp]-fs[jx-1][jy][jzp]) +
-							gs[jx][jy][jzm]*(fs[jx+1][jy][jzm]-fs[jx-1][jy][jzm]))
-								/ (mesh->dx[jx][jy] * mesh->dz);
-				// Jx+
-				BoutReal Jxp = 0.25*( gs[jx+1][jy][jzp]*(fs[jx][jy][jzp]-fs[jx+1][jy][jz]) -
-					gs[jx-1][jy][jzm]*(fs[jx-1][jy][jz]-fs[jx][jy][jzm]) -
-						gs[jx-1][jy][jzp]*(fs[jx][jy][jzp]-fs[jx-1][jy][jz]) +
-							gs[jx+1][jy][jzm]*(fs[jx+1][jy][jz]-fs[jx][jy][jzm]))
-								/ (mesh->dx[jx][jy] * mesh->dz);
-          
-				result[jx][jy][jz] = (Jpp + Jpx + Jxp) / 3.;
+						// J+x
+						BoutReal Jpx = 0.25*( gs[jx+1][jy][jz]*(fs[jx+1][jy][jzp]-fs[jx+1][jy][jzm]) -
+							gs[jx-1][jy][jz]*(fs[jx-1][jy][jzp]-fs[jx-1][jy][jzm]) -
+								gs[jx][jy][jzp]*(fs[jx+1][jy][jzp]-fs[jx-1][jy][jzp]) +
+									gs[jx][jy][jzm]*(fs[jx+1][jy][jzm]-fs[jx-1][jy][jzm]))
+										/ (mesh->dx[jx][jy] * mesh->dz);
+						// Jx+
+						BoutReal Jxp = 0.25*( gs[jx+1][jy][jzp]*(fs[jx][jy][jzp]-fs[jx+1][jy][jz]) -
+							gs[jx-1][jy][jzm]*(fs[jx-1][jy][jz]-fs[jx][jy][jzm]) -
+								gs[jx-1][jy][jzp]*(fs[jx][jy][jzp]-fs[jx-1][jy][jz]) +
+									gs[jx+1][jy][jzm]*(fs[jx+1][jy][jz]-fs[jx][jy][jzm]))
+										/ (mesh->dx[jx][jy] * mesh->dz);
+			  
+						result[jx][jy][jz] = (Jpp + Jpx + Jxp) / 3.;
+					}
+				}
 			}
 			if(mesh->ShiftXderivs && (mesh->ShiftOrder == 0))
 				result = result.shiftZ(false); // Shift back
