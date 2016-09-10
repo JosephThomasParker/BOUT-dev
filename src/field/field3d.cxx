@@ -480,9 +480,11 @@ void Field3D::setXStencil(stencil &fval, const bindex &bx, CELL_LOC loc) const {
 }
 
 void Field3D::setXStencil(stencil &fval, const DataIterator &it, CELL_LOC loc) const {
+  output << "Start setXStencil " <<endl;
   fval.jx = it.x;
   fval.jy = it.y;
   fval.jz = it.z;
+  output << "fvals " <<endl;
   
 #ifdef CHECK
   // Check data set
@@ -491,10 +493,15 @@ void Field3D::setXStencil(stencil &fval, const DataIterator &it, CELL_LOC loc) c
 #endif
   
   fval.c  = operator()(it.x,  it.y, it.z);
+  output << "after c " <<endl;
   fval.p  = operator()(it.x+1, it.y, it.z);
+  output << "after p " <<endl;
   fval.m  = operator()(it.x-1, it.y, it.z);
+  output << "after m " <<endl;
   fval.pp = operator()(it.x+2, it.y, it.z);
+  output << "after pp " <<endl;
   fval.mm = operator()(it.x-2, it.y, it.z);
+  output << "after ops " <<endl;
 
   if(mesh->StaggerGrids && (loc != CELL_DEFAULT) && (loc != location)) {
     // Non-centred stencil
@@ -513,6 +520,7 @@ void Field3D::setXStencil(stencil &fval, const DataIterator &it, CELL_LOC loc) c
     // Shifted in one direction -> shift in another
     // Could produce warning
   }
+  output << "end " <<endl;
 }
 
 void Field3D::setXStencil(forward_stencil &fval, const bindex &bx, CELL_LOC loc) const
@@ -1197,6 +1205,8 @@ F3D_OP_FPERP(-);
 F3D_OP_FPERP(/);
 F3D_OP_FPERP(*);
 
+#define OMP_PARA_FOR _Pragma("pragma omp parallel")
+
 #define F3D_OP_FIELD(op, ftype)                                     \
   const Field3D operator op(const Field3D &lhs, const ftype &rhs) { \
     Field3D result;                                                 \
@@ -1260,11 +1270,14 @@ Field3D pow(const Field3D &lhs, const Field3D &rhs) {
   Field3D result;
   result.allocate();
 
+#pragma omp parallel
+{
   // Iterate over indices
   for(auto i : result) {
     result[i] = ::pow(lhs[i], rhs[i]);
     ASSERT2( ::finite( result[i] ) );
   }
+}
   
   result.setLocation( lhs.getLocation() );
   
@@ -1277,11 +1290,14 @@ Field3D pow(const Field3D &lhs, const Field2D &rhs) {
   Field3D result;
   result.allocate();
 
+#pragma omp parallel
+{
   // Iterate over indices
   for(auto i : result) {
     result[i] = ::pow(lhs[i], rhs[i]);
     ASSERT2( ::finite( result[i] ) );
   }
+}
 
   result.setLocation( lhs.getLocation() );
   
@@ -1294,11 +1310,14 @@ Field3D pow(const Field3D &lhs, const FieldPerp &rhs) {
   Field3D result;
   result.allocate();
 
+#pragma omp parallel
+{
   // Iterate over indices
   for(auto i : result) {
     result[i] = ::pow(lhs[i], rhs[i]);
     ASSERT2( ::finite( result[i] ) );
   }
+}
 
   result.setLocation( lhs.getLocation() );
   return result;
@@ -1307,8 +1326,11 @@ Field3D pow(const Field3D &lhs, const FieldPerp &rhs) {
 Field3D pow(const Field3D &f, BoutReal rhs) {
   Field3D result;
   result.allocate();
+#pragma omp parallel
+{
   for(auto i : result)
     result[i] = ::pow(f[i], rhs);
+}
   
   result.setLocation( f.getLocation() );
   return result;
@@ -1317,8 +1339,11 @@ Field3D pow(const Field3D &f, BoutReal rhs) {
 Field3D pow(BoutReal lhs, const Field3D &rhs) {
   Field3D result;
   result.allocate();
+#pragma omp parallel
+{
   for(auto i : result)
     result[i] = ::pow(lhs, rhs[i]);
+}
   
   result.setLocation( rhs.getLocation() );
   return result;
@@ -1337,9 +1362,12 @@ BoutReal min(const Field3D &f, bool allpe) {
 
   BoutReal result = f[f.region(RGN_NOBNDRY).begin()];
   
+#pragma omp parallel
+{
   for(auto i: f.region(RGN_NOBNDRY))
     if(f[i] < result)
       result = f[i];
+}
   
   if(allpe) {
     // MPI reduce
@@ -1366,9 +1394,12 @@ BoutReal max(const Field3D &f, bool allpe) {
   
   BoutReal result = f[f.region(RGN_NOBNDRY).begin()];
   
+#pragma omp parallel
+{
   for(auto i: f.region(RGN_NOBNDRY))
     if(f[i] > result)
       result = f[i];
+}
   
   if(allpe) {
     // MPI reduce
@@ -1602,6 +1633,8 @@ void checkData(const Field3D &f)  {
   if(!f.isAllocated())
     throw BoutException("Field3D: Operation on empty data\n");
   
+#pragma omp parallel
+{
   for(auto d : f) {
     if( (d.x < mesh->xstart) or (d.x > mesh->xend) or (d.y < mesh->ystart) or (d.y > mesh->yend) or (d.z >= mesh->ngz-1))
       continue; // Exclude boundary cells
@@ -1609,6 +1642,7 @@ void checkData(const Field3D &f)  {
     if(!finite(f[d]))
       throw BoutException("Field3D: Operation on non-finite data at [%d][%d][%d]\n", d.x, d.y, d.z);
   }
+}
 }
 #endif
 
@@ -1621,9 +1655,12 @@ const Field3D copy(const Field3D &f) {
 const Field3D floor(const Field3D &var, BoutReal f) {
   Field3D result = copy(var);
   
+#pragma omp parallel
+{
   for(auto d : result)
     if(result[d] < f)
       result[d] = f;
+}
   
   return result;
 }

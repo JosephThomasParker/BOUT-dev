@@ -26,7 +26,8 @@ struct Indices {
 class DataIterator
   : public std::iterator<std::bidirectional_iterator_tag, Indices> {
 private:
-  void omp_init(int xs,int xe,bool end);
+  //void omp_init(int xs,int xe,bool end);
+  void omp_init(int zs,int ze,bool end);
 public:
   /// Constructor. This would set ranges. Could depend on thread number
   DataIterator(int xs, int xe,
@@ -43,7 +44,8 @@ public:
     xmax(xend),   ymax(ye),   zmax(ze)
 #endif
   {
-    omp_init(xs,xe,false);
+    //omp_init(xs,xe,false);
+    omp_init(zs,ze,false);
   }
 
   // set end();
@@ -62,7 +64,8 @@ public:
     xmax(xend),   ymax(ye),   zmax(ze)
 #endif
   {
-    omp_init(xs,xe,true);
+    //omp_init(xs,xe,true);
+    omp_init(zs,ze,true);
     next();
   }
   /// The index variables, updated during loop
@@ -123,7 +126,8 @@ public:
   /// Checks if finished looping. Is this more efficient than
   /// using the more idiomatic it != MeshIterator::end() ?
   bool done() const {
-    return (x > xend) || (x < xstart);
+    //return (x > xend) || (x < xstart);
+    return (z > zend) || (z < zstart);
   }
   
 private:
@@ -142,29 +146,51 @@ private:
   
   /// Advance to the next index
   void next() {
-    ++z;
-    if(z > zmax) {
-      z = zmin;
+    ++x;
+    if(x > xmax) {
+      x = xmin;
       ++y;
       if(y > ymax) {
 	y = ymin;
-	++x;
+	++z;
       }
     }
   }
+///  void next() {
+///    ++z;
+///    if(z > zmax) {
+///      z = zmin;
+///      ++y;
+///      if(y > ymax) {
+///	y = ymin;
+///	++x;
+///      }
+///    }
+///  }
 
   /// Rewind to the previous index
   void prev() {
-    --z;
-    if(z < zmin) {
-      z = zmax;
+    --x;
+    if(x < xmin) {
+      x = xmax;
       --y;
       if(y < ymin) {
 	y = ymax;
-	--x;
+	--z;
       }
     }
   }
+///  void prev() {
+///    --z;
+///    if(z < zmin) {
+///      z = zmax;
+///      --y;
+///      if(y < ymin) {
+///	y = ymax;
+///	--x;
+///      }
+///    }
+///  }
 };
 
 /*
@@ -200,12 +226,13 @@ inline int DI_spread_work(int work,int cp,int np){
   return result;
 };
 
-inline void DataIterator::omp_init(int xs, int xe,bool end){
-  xmin=xs;
-  xmax=xe;
+inline void DataIterator::omp_init(int zs, int ze,bool end){
+  zmin=zs;
+  zmax=ze;
   // In the case of OPENMP we need to calculate the range
   int threads=omp_get_num_threads();
   if (threads > 1){
+    int nx=xmax-xmin+1;
     int ny=ymax-ymin+1;
     int nz=zmax-zmin+1;
     int work  = (xmax-xmin+1)*ny*nz;
@@ -213,23 +240,23 @@ inline void DataIterator::omp_init(int xs, int xe,bool end){
     int begin = DI_spread_work(work,current_thread,threads);
     int end   = DI_spread_work(work,current_thread+1,threads);
     --end;
-    zend   = (end   % nz) + zmin;
-    zstart = (begin % nz) + zmin;
-    end   /= nz;
-    begin /= nz;
+    xend   = (end   % nx) + xmin;
+    xstart = (begin % nx) + xmin;
+    end   /= nx;
+    begin /= nx;
     yend   = (end   % ny) + ymin;
     ystart = (begin % ny) + ymin;
     end   /= ny;
     begin /= ny;
-    xend   = end;
-    xstart = begin;
+    zend   = end;
+    zstart = begin;
   } else {
-    zstart = zmin;
-    zend   = zmax;
+    xstart = xmin;
+    xend   = xmax;
     ystart = ymin;
     yend   = ymax;
-    xstart = xs;
-    xend   = xe;
+    zstart = zs;
+    zend   = ze;
   }
   if (!end){
     x=xstart;
@@ -241,8 +268,50 @@ inline void DataIterator::omp_init(int xs, int xe,bool end){
     z=zend;
   }
 };
+///inline void DataIterator::omp_init(int xs, int xe,bool end){
+///  xmin=xs;
+///  xmax=xe;
+///  // In the case of OPENMP we need to calculate the range
+///  int threads=omp_get_num_threads();
+///  if (threads > 1){
+///    int ny=ymax-ymin+1;
+///    int nz=zmax-zmin+1;
+///    int work  = (xmax-xmin+1)*ny*nz;
+///    int current_thread = omp_get_thread_num();
+///    int begin = DI_spread_work(work,current_thread,threads);
+///    int end   = DI_spread_work(work,current_thread+1,threads);
+///    --end;
+///    zend   = (end   % nz) + zmin;
+///    zstart = (begin % nz) + zmin;
+///    end   /= nz;
+///    begin /= nz;
+///    yend   = (end   % ny) + ymin;
+///    ystart = (begin % ny) + ymin;
+///    end   /= ny;
+///    begin /= ny;
+///    xend   = end;
+///    xstart = begin;
+///  } else {
+///    zstart = zmin;
+///    zend   = zmax;
+///    ystart = ymin;
+///    yend   = ymax;
+///    xstart = xs;
+///    xend   = xe;
+///  }
+///  if (!end){
+///    x=xstart;
+///    y=ystart;
+///    z=zstart;
+///  } else {
+///    x=xend;
+///    y=yend;
+///    z=zend;
+///  }
+///};
 #else
-inline void DataIterator::omp_init(int xs, int xe,bool end){;};
+//inline void DataIterator::omp_init(int xs, int xe,bool end){;};
+inline void DataIterator::omp_init(int zs, int ze,bool end){;};
 #endif
 
 #endif // __DATAITERATOR_H__

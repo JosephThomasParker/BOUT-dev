@@ -60,6 +60,7 @@
 #include <output.hxx>
 
 #include <bout/mesh.hxx>
+#include <bout/dataiterator.hxx>
 
 
 /*******************************************************************************
@@ -1101,10 +1102,22 @@ const Field3D Mesh::applyXdiff(const Field3D &var, Mesh::deriv_func func, Mesh::
   //  }
   //}while(next_index2(&bx));
 
+#pragma omp parallel
+{
   for(DataIterator it = begin(var); !it.done() ; ++it){
-    var.setXStencil(s, it, loc);
-    result(it.x,it.y,it.z) = func(s);
+    //output << it.x << " "<<it.y<<" "<<it.z<<endl;
+    stencil sloc;
+    bindex bxloc;
+    bxloc.jx = it.x; 
+    bxloc.jy = it.y;
+    bxloc.jz = it.z;
+    calc_index(&bxloc);
+    var.setXStencil(sloc, bxloc, loc);
+    //output << s.mm << " " << s.m << " " << s.c << " "<< s.p <<" "<< s.pp<<endl;
+    result(bxloc.jx,bxloc.jy,bxloc.jz) = func(sloc);
+  //  result(it.x,it.y,it.z) = func(s);
   }
+}
 
 #ifdef CHECK
   // Mark boundaries as invalid
@@ -1347,6 +1360,21 @@ const Field3D Mesh::applyZdiff(const Field3D &var, Mesh::deriv_func func, CELL_L
     var.setZStencil(s, bx, loc);
     result(bx.jx,bx.jy,bx.jz) = func(s);
   }while(next_index3(&bx));
+
+///#pragma omp parallel
+///{
+///  for(DataIterator it = begin(var); !it.done() ; ++it){
+///    //output << it.x << " "<<it.y<<" "<<it.z<<endl;
+///    stencil sloc;
+///    bindex bxloc;
+///    bxloc.jx = it.x; 
+///    bxloc.jy = it.y;
+///    bxloc.jz = it.z;
+///    calc_index(&bxloc);
+///    var.setZStencil(sloc, bxloc, loc);
+///    result(bxloc.jx,bxloc.jy,bxloc.jz) = func(sloc);
+///  }
+///}
 
   if (mesh->freeboundary_xin && mesh->firstX() && !mesh->periodicX) {
     for (bx.jx=mesh->xstart-1; bx.jx>=0; bx.jx--)
@@ -2188,6 +2216,22 @@ const Field3D Mesh::indexVDDX(const Field &v, const Field &f, CELL_LOC outloc, D
     
     result(bx.jx, bx.jy, bx.jz) = func(vval, fval);
   }while(next_index3(&bx));
+
+///#pragma omp parallel
+///{
+///  stencil vval, fval;
+///  bindex bx;
+///  for(DataIterator it = begin(result); !it.done() ; ++it){
+///    bx.jx = it.x; 
+///    bx.jy = it.y;
+///    bx.jz = it.z;
+///    calc_index(&bx);
+///    v.setXStencil(vval, bx, diffloc);
+///    f.setXStencil(fval, bx); // Location is always the same as input
+///    
+///    result(bx.jx, bx.jy, bx.jz) = func(vval, fval);
+///  }
+///}
   
   result.setLocation(inloc);
 
