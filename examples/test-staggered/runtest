@@ -50,13 +50,14 @@ for stag in ["true","false"]:
         with open("run.log.stag", "w") as f:
           f.write(out)
 
-        analyse("StaggerGrids_"+stag+"_symmetricGlobalY_"+glob+"_nonperiodic.png")
+        analyse("StaggerGrids_"+stag+"_symmetricGlobalY_"+glob+".png")
+###        analyse("StaggerGrids_"+stag+"_symmetricGlobalY_"+glob+"_nonperiodic.png")
 
-        print("Running without staggered grids")
-        s, out = launch("./test_staggered -d test mesh:StaggerGrids="+stag+" mesh:symmetricGlobalY="+glob+" mesh:ixseps1=-10000 mesh:ixseps2=10000", nproc=1, pipe=True)
-        with open("run.log.nostag", "w") as f:
-          f.write(out)
-
-        analyse("StaggerGrids_"+stag+"_symmetricGlobalY_"+glob+"_periodic.png")
+###        print("Running without staggered grids")
+###        s, out = launch("./test_staggered -d test mesh:StaggerGrids="+stag+" mesh:symmetricGlobalY="+glob+" mesh:ixseps1=-10000 mesh:ixseps2=10000", nproc=1, pipe=True)
+###        with open("run.log.nostag", "w") as f:
+###          f.write(out)
+###
+###        analyse("StaggerGrids_"+stag+"_symmetricGlobalY_"+glob+"_periodic.png")
 
 
