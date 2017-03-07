@@ -27,11 +27,12 @@ int physics_run(BoutReal time) {
   ddt(v) = -Grad_par(n, CELL_YLOW);
  
   // Have to manually apply the lower Y boundary region, using a width of 3
-  for( RangeIterator rlow = mesh->iterateBndryLowerY(); !rlow.isDone(); rlow++)
-    for(int y=2;y>=0;y--) 
-      for(int z=0;z<mesh->LocalNz;z++) {
-        ddt(v)(rlow.ind,y,z) = ddt(v)(rlow.ind,y+1,z);
-      }
+//  for( RangeIterator rlow = mesh->iterateBndryLowerY(); !rlow.isDone(); rlow++)
+//    for(int y=2;y>=0;y--) 
+//      for(int z=0;z<mesh->LocalNz;z++) {
+//	v(rlow.ind,y,z) = 1.0;
+//	//ddt(v)(rlow.ind,y,z) = ddt(v)(rlow.ind,y+1,z);
+//      }
   
   return 0;
 }

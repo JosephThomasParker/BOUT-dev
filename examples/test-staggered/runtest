@@ -13,64 +13,50 @@
 
 from __future__ import print_function
 from boutdata.collect import collect
-from numpy.fft import rfftn
-from numpy import argmax
+import matplotlib.pyplot as plt
 
 from boututils.run_wrapper import shell, launch
 
-def analyse(path="test"):
+def analyse(filename,path="test"):
   """
-  Reads in density "n", subtracts 1 to get the
-  perturbation.
-  Takes FFT in time and Y, and for each
-  Y wavenumber finds the time harmonic with the
-  highest amplitude
+  Reads in density "n" and velocity "v", and plots.
   """
 
   # Read the data
   n = collect("n", path=path)
-  n = n[:,2,:,0]  # Get 2D [t,y] array
-  # Subtract the background to get perturbation
-  delta_n = n - 1.0
+  v = collect("v", path=path)
+  fig1 = plt.figure(num = 1, facecolor='w', edgecolor='k')
+  plt.plot(n[0,2,:,0])
+  plt.plot(v[0,2,:,0])
+  plt.grid()
+  plt.ylim(0.990,1.010)
+  fig1.savefig(filename, facecolor='w', edgecolor='w', orientation='portrait')
+  fig1.clf()
 
-  # Take FFT in both t and y
-  f = rfftn(delta_n)
-
-  nt = f.shape[0] # Number of time points
-
-  # Get peak harmonic
-  freq = argmax(abs(f[0:(nt//2),:]), axis=0)
-
-  return freq
 
 ####################################################
 
-print("Making I/O test")
+print("Making staggered test")
 shell("make > make.log")
 
 # Run with and without staggered grids
-print("Running with staggered grids")
-s, out = launch("./test_staggered -d test mesh:StaggerGrids=true", nproc=1, pipe=True)
-with open("run.log.stag", "w") as f:
-  f.write(out)
+for stag in ["true","false"]:
+    # Run with and without symmetricGlobalY
+    for glob in ["true","false"]:
+        # Run with and without periodic grids
 
-stag = analyse()
+        # Periodic
+        s, out = launch("./test_staggered -d test mesh:StaggerGrids="+stag+" mesh:symmetricGlobalY="+glob+" mesh:ixseps1=-1 mesh:ixseps2=0", nproc=1, pipe=True)
+        with open("run.log.stag", "w") as f:
+          f.write(out)
 
-print("Running without staggered grids")
-s, out = launch("./test_staggered -d test mesh:StaggerGrids=false", nproc=1, pipe=True)
-with open("run.log.nostag", "w") as f:
-  f.write(out)
+        analyse("StaggerGrids_"+stag+"_symmetricGlobalY_"+glob+"_nonperiodic.png")
 
-nostag = analyse()
+        print("Running without staggered grids")
+        s, out = launch("./test_staggered -d test mesh:StaggerGrids="+stag+" mesh:symmetricGlobalY="+glob+" mesh:ixseps1=-10000 mesh:ixseps2=10000", nproc=1, pipe=True)
+        with open("run.log.nostag", "w") as f:
+          f.write(out)
 
-import matplotlib.pyplot as plt
+        analyse("StaggerGrids_"+stag+"_symmetricGlobalY_"+glob+"_periodic.png")
 
-plt.plot(stag, '-o', label="Staggered grids")
-plt.plot(nostag, '-x', label="Centered grids")
 
-plt.legend(loc="upper left")
-plt.xlabel(r"Spatial harmonic $k$")
-plt.ylabel(r"Frequency $\omega$")
-
-plt.savefig("test_staggered.pdf")
-plt.show()
