@@ -72,13 +72,23 @@ public:
    * If OpenMP is enabled, the index range is divided
    * between threads using the omp_init method.
    */ 
-  SingleDataIterator(int is, int xe, int ye, int ze) : 
+  SingleDataIterator(int xs, int xe,
+	       int ys, int ye,
+	       int zs, int ze,
+	       int nx, int ny, int nz) : 
 #ifndef _OPENMP
-    nx(xe), ny(ye), nz(ze),
-    i(is), istart(is), imin(istart), iend(nx*ny*nz-1), imax(iend),
+    x(xs), y(ys), z(zs),
+    xstart(xs),   ystart(ys),   zstart(zs),
+    xmin(xstart), ymin(ystart), zmin(zstart),
+    xend(xe),     yend(ye),     zend(ze),
+    xmax(xend),   ymax(yend),   zmax(zend),
+    i((x*ny+y)*nz+z), istart((xs*ny+ys)*nz+zs), imin(istart), iend((xe*ny+ye)*nz+ze), imax(iend),
+    nx(nx), ny(ny), nz(nz),
 #else
-    nx(xe), ny(ye), nz(ze),
-    imin(is), imax(nx*ny*nz-1), 
+    xmin(xs),     ymin(ys),     zmin(zs),
+    xmax(xe),     ymax(ye),     zmax(ze),
+    imin((xs*ny+ys)*nz+zs), imax((xe*ny+ye)*nz+ze), 
+    nx(nx), ny(ny), nz(nz),
 #endif
     isEnd(false)
   {
@@ -91,13 +101,21 @@ public:
    * set end();
    * use as DataIterator(int,int,int,int,int,int,DI_GET_END);
    */
-  SingleDataIterator(int is, int xe, int ye, int ze, void* UNUSED(dummy)) :
+  SingleDataIterator(int xs, int xe,
+	       int ys, int ye,
+	       int zs, int ze,
+	       int nx, int ny, int nz, void* UNUSED(dummy)) : 
 #ifndef _OPENMP
-    nx(xe), ny(ye), nz(ze),
-    i(is), istart(is), imin(istart), iend(nx*ny*nz-1), imax(iend),
+    x(xs), y(ys), z(zs),
+    xstart(xs),   ystart(ys),   zstart(zs),
+    xmin(xstart), ymin(ystart), zmin(zstart),
+    xend(xe),     yend(ye),     zend(ze),
+    xmax(xend),   ymax(yend),   zmax(zend),
+    i((x*ny+y)*nz+z), istart((xs*ny+ys)*nz+zs), imin(istart), iend((xe*ny+ye)*nz+ze), imax(iend),
 #else
-    nx(xe), ny(ye), nz(ze),
-    imin(is), imax(nx*ny*nz-1), 
+    xmin(xs),     ymin(ys),     zmin(zs),
+    xmax(xe),     ymax(ye),     zmax(ze),
+    imin((xs*ny+ys)*nz+zs), imax((xe*ny+ye)*nz+ze), 
 #endif
     isEnd(true)
   {
@@ -112,7 +130,8 @@ public:
    * Should make these private and provide getters?
    */
   int i;
-  const int nx, ny, nz;
+  int x, y, z;
+  int nx, ny, nz;
 
   /// Pre-increment operator. Use this rather than post-increment when possible
   SingleDataIterator& operator++() { next(); return *this; }
@@ -229,29 +248,53 @@ private:
   //const int nx, ny, nz;
 #ifndef _OPENMP
   const int istart;
+  const int xstart, ystart, zstart;
 #else
   int istart;
+  int xstart, ystart, zstart;
 #endif
 
   int imin;
+  int xmin, ymin, zmin;
 
 #ifndef _OPENMP
   const int iend;
+  const int xend, yend, zend;
 #else
   int iend;
+  int xend, yend, zend;
 #endif
 
   int imax;
+  int xmax, ymax, zmax;
 
   const bool isEnd;
   /// Advance to the next index
   void next() {
-    ++i;
+    ++z;
+    if(z > zmax) {
+      z = zmin;
+      ++y;
+      if(y > ymax) {
+	y = ymin;
+	++x;
+      }
+    }
+    i = (x*ny+y)*nz+z;
   }
 
   /// Rewind to the previous index
   void prev() {
-    --i;
+    --z;
+    if(z < zmin) {
+      z = zmax;
+      --y;
+      if(y < ymin) {
+	y = ymax;
+	--x;
+      }
+    }
+    i = (x*ny+y)*nz+z;
   }
 };
 
@@ -292,12 +335,21 @@ private:
 struct SIndexRange {
   int istart, nx, ny, nz;
   int iend = nx*ny*nz-1;
+  int xstart, xend;
+  int ystart, yend;
+  int zstart, zend;
   
   const SingleDataIterator begin() const {
-    return SingleDataIterator(istart, nx, ny, nz);
+    return SingleDataIterator(xstart, xend, 
+                              ystart, yend,
+                              zstart, zend,
+                              nx, ny, nz);
   }
   const SingleDataIterator end() const {
-    return SingleDataIterator(istart, nx, ny, nz, DI_GET_END);
+    return SingleDataIterator(xstart, xend, 
+			      ystart, yend,
+			      zstart, zend,
+			      nx, ny, nz, DI_GET_END);
   }
 };
 
@@ -325,22 +377,39 @@ inline void SingleDataIterator::omp_init(bool end){
     int current_thread = omp_get_thread_num();
     int begin = SDI_spread_work(work,current_thread,threads);
     int end   = SDI_spread_work(work,current_thread+1,threads);
-    //output << "xmin" << xmin;
-    //output << "xmax" << xmax;
-    //output << "work" << work;
-    //output << "begin" << begin << "\n";
-    //output << "end" << end << "\n";
     --end;
-    iend   = end;
-    istart = begin;
+    zend   = (end   % nz) + zmin;
+    zstart = (begin % nz) + zmin;
+    end   /= nz;
+    begin /= nz;
+    yend   = (end   % ny) + ymin;
+    ystart = (begin % ny) + ymin;
+    end   /= ny;
+    begin /= ny;
+    xend   = end;
+    xstart = begin;
+    istart = (xstart*ny+ystart)*nz+zstart;
+    iend   = (xend*ny+yend)*nz+zend;
   } else {
-    istart = imin;
-    iend   = imax;
+    zstart = zmin;
+    zend   = zmax;
+    ystart = ymin;
+    yend   = ymax;
+    xstart = xmin;
+    xend   = xmax;
+    istart = (xstart*ny+ystart)*nz+zstart;
+    iend   = (xend*ny+yend)*nz+zend;
   }
   if (!end){
     i=istart;
+    x=xstart;
+    y=ystart;
+    z=zstart;
   } else {
     i=iend;
+    x=xend;
+    y=yend;
+    z=zend;
   }
 };
 #endif
