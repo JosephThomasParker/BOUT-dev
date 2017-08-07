@@ -141,6 +141,7 @@ class Field2D : public Field, public FieldData {
    * Uses the REGION flags in bout_types.hxx
    */
   const IndexRange region(REGION rgn) const;
+  const SingleDataIterator sdi_region(REGION rgn) const;
 
   /*!
    * Direct access to the data array. Since operator() is used
@@ -243,6 +244,10 @@ class Field2D : public Field, public FieldData {
 
   BoutReal& operator()(const SingleDataIterator &i) {
       return data[i.i/i.nz];
+  }
+
+  const BoutReal& operator()(const SingleDataIterator &i) const {
+      return data[i.i/i.nz];
 //////    if ( (nz & (nz-1)) != 0 ) {
 ///      return data[i.index%nz];
 //////    } else {
@@ -256,7 +261,7 @@ class Field2D : public Field, public FieldData {
 ///    }
   }
 
-  const BoutReal& operator()(const SingleDataIterator &i) const {
+  const BoutReal& operator[](const SingleDataIterator &i) const {
       return data[i.i/i.nz];
 //////    if ( (nz & (nz-1)) != 0 ) {
 ///      return data[i.index%nz];

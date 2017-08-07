@@ -6,6 +6,7 @@
 #ifndef __SINGLEDATAITERATOR_H__
 #define __SINGLEDATAITERATOR_H__
 
+#include "bout/array.hxx"
 #include <iterator>
 #include <iostream>
 #include "unused.hxx"
@@ -20,7 +21,8 @@ int SDI_spread_work(int num_work, int thread, int max_thread);
  * Set of indices - DataIterator is dereferenced into these
  */
 struct SIndices {
-  int i;
+  int i; // index of array
+  int j; // count index
   int nx;
   int ny;
   int nz;
@@ -66,6 +68,12 @@ private:
 #ifdef _OPENMP
   void omp_init(bool end);
 #endif
+  void make_region(int xs,int xe,
+                         int ys,int ye,
+			 int zs,int ze,
+			 int nx, int ny, int nz);
+  void idx_to_xyz(int i);
+
 public:
   /*!
    * Constructor. This sets index ranges.
@@ -83,11 +91,15 @@ public:
     xend(xe),     yend(ye),     zend(ze),
     xmax(xend),   ymax(yend),   zmax(zend),
     i((x*ny+y)*nz+z), istart((xs*ny+ys)*nz+zs), imin(istart), iend((xe*ny+ye)*nz+ze), imax(iend),
+    icount(0),
+    icountend((xe-xs)*(ye-ys)*(ze-zs)),
     nx(nx), ny(ny), nz(nz),
 #else
     xmin(xs),     ymin(ys),     zmin(zs),
     xmax(xe),     ymax(ye),     zmax(ze),
     imin((xs*ny+ys)*nz+zs), imax((xe*ny+ye)*nz+ze), 
+    icount(0),
+    icountend((xe-xs)*(ye-ys)*(ze-zs)),
     nx(nx), ny(ny), nz(nz),
 #endif
     isEnd(false)
@@ -95,6 +107,10 @@ public:
 #ifdef _OPENMP
     omp_init(false);
 #endif
+    make_region(xs,xe,
+                    ys,ye,
+		    zs,ze,
+		    nx,ny,nz);
   }
 
   /*!
@@ -112,16 +128,25 @@ public:
     xend(xe),     yend(ye),     zend(ze),
     xmax(xend),   ymax(yend),   zmax(zend),
     i((x*ny+y)*nz+z), istart((xs*ny+ys)*nz+zs), imin(istart), iend((xe*ny+ye)*nz+ze), imax(iend),
+    icount(0),
+    icountend((xe-xs)*(ye-ys)*(ze-zs)),
 #else
     xmin(xs),     ymin(ys),     zmin(zs),
     xmax(xe),     ymax(ye),     zmax(ze),
     imin((xs*ny+ys)*nz+zs), imax((xe*ny+ye)*nz+ze), 
+    icount(0),
+    icountend((xe-xs)*(ye-ys)*(ze-zs)),
 #endif
     isEnd(true)
   {
 #ifdef _OPENMP
     omp_init(true);
 #endif
+    make_region(xs,xe,
+                ys,ye,
+                zs,ze,
+                nx,ny,nz);
+    
     next();
   }
   
@@ -129,9 +154,11 @@ public:
    * The index variables, updated during loop
    * Should make these private and provide getters?
    */
-  int i;
+  int i, icount;
+  const int icountend;
   int x, y, z;
   int nx, ny, nz;
+  int rgn[800];
 
   /// Pre-increment operator. Use this rather than post-increment when possible
   SingleDataIterator& operator++() { next(); return *this; }
@@ -234,12 +261,13 @@ public:
    * using the more idiomatic it != DataIterator::end() ?
    */
   bool done() const {
-#ifndef _OPENMP
-    return (i > iend) || (i < istart);
-#else //_OPENMP
-    return (i > iend) || (i < istart);
-    //return (x == xend) || x > xend || (x <= xstart)  ;
-#endif //_OPENMP
+    return icount > icountend ;
+///#ifndef _OPENMP
+///    //return (i > iend) || (i < istart);
+///#else //_OPENMP
+///    return (i > iend) || (i < istart);
+///    //return (x == xend) || x > xend || (x <= xstart)  ;
+///#endif //_OPENMP
   }
   
 private:
@@ -271,30 +299,15 @@ private:
   const bool isEnd;
   /// Advance to the next index
   void next() {
-    ++z;
-    if(z > zmax) {
-      z = zmin;
-      ++y;
-      if(y > ymax) {
-	y = ymin;
-	++x;
-      }
-    }
-    i = (x*ny+y)*nz+z;
+    icount++;
+    i = rgn[icount];
+    //idx_to_xyz(i);
   }
 
   /// Rewind to the previous index
   void prev() {
-    --z;
-    if(z < zmin) {
-      z = zmax;
-      --y;
-      if(y < ymin) {
-	y = ymax;
-	--x;
-      }
-    }
-    i = (x*ny+y)*nz+z;
+    icount--;
+    i = rgn[icount];
   }
 };
 
@@ -350,6 +363,32 @@ struct SIndexRange {
 			      ystart, yend,
 			      zstart, zend,
 			      nx, ny, nz, DI_GET_END);
+  }
+};
+
+inline void SingleDataIterator::idx_to_xyz(int i){
+  // function for debugging
+  // print x,y,z for a given icount
+
+  // i = (x*ny+y)*nz+z
+  output << "i = " << i << ", x = " << ((i/nz)/ny) << ", y = " << (i/nz)%ny << ", z = " << (i%nz) << "\n";
+};
+
+inline void SingleDataIterator::make_region(int xs,int xe,
+                                            int ys,int ye,
+		                            int zs,int ze,
+		                            int nx,int ny,int nz){
+  // Make an array of indices corresponding to a region.
+
+  int j=0;
+  for(int x=xs; x<=xe ; x++){
+    for(int y=ys; y<=ye ; y++){
+      for(int z=zs; z<=ze ; z++){
+	rgn[j] = (x*ny+y)*nz+z;
+	//output << rgn[j] << " " << j << "\n";
+	j++;
+      }
+    }
   }
 };
 

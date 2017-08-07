@@ -305,6 +305,13 @@ const IndexRange Field3D::region(REGION rgn) const {
   };
 }
 
+const SingleDataIterator Field3D::sdi_region_all() const {
+    return SingleDataIterator(0, nx-1,
+                              0, ny-1,
+                              0, nz-1,
+			      nx, ny, nz);
+  }
+
 const SingleDataIterator Field3D::sdi_region(REGION rgn) const {
   switch(rgn) {
   case RGN_ALL: {

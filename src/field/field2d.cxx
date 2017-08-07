@@ -204,6 +204,42 @@ const IndexRange Field2D::region(REGION rgn) const {
   };
 }
 
+const SingleDataIterator Field2D::sdi_region(REGION rgn) const {
+  switch(rgn) {
+  case RGN_ALL: {
+    return SingleDataIterator(0, nx-1,
+                              0, ny-1,
+                              0, 0,
+			      nx, ny, nz);
+    break;
+  }
+  case RGN_NOBNDRY: {
+    return SingleDataIterator(fieldmesh->xstart, fieldmesh->xend,
+                              fieldmesh->ystart, fieldmesh->yend,
+                              0, 0,
+			      nx, ny, nz);
+    break;
+  }
+  case RGN_NOX: {
+    return SingleDataIterator(fieldmesh->xstart, fieldmesh->xend,
+                              0, ny-1,
+                              0, 0,
+			      nx, ny, nz);
+    break;
+  }
+  case RGN_NOY: {
+    return SingleDataIterator(0, nx-1,
+                              fieldmesh->ystart, fieldmesh->yend,
+                              0, 0,
+			      nx, ny, nz);
+    break;
+  }
+  default: {
+    throw BoutException("Field2D::region() : Requested region not implemented");
+  }
+  };
+}
+
 ///////// Operators
 
 #define F2D_UPDATE_FIELD(op,bop,ftype)                       \

@@ -89,115 +89,116 @@ int main(int argc, char **argv) {
   BoutReal *bd = &b(0,0,0);
   BoutReal *rd = &result(0,0,0);
   
-  // Loop over data so first test doesn't have a disadvantage from caching
-  for(int i=0;i<10;++i) {
-#pragma omp parallel for
-    for(int j=0;j<mesh->LocalNx*mesh->LocalNy*mesh->LocalNz;++j) {
-      rd[j] = ad[j] + bd[j];
-    }
-  }
-  
-  SteadyClock start1 = steady_clock::now();
-  int len = mesh->LocalNx*mesh->LocalNy*mesh->LocalNz;
-  for(int i=0;i<10;++i) {
-#pragma omp parallel for
-    for(int j=0;j<len;++j) {
-      rd[j] = ad[j] + bd[j];
-    }
-  }
-  Duration elapsed1 = steady_clock::now() - start1;
-
-  // Nested loops over block data
-  SteadyClock start2 = steady_clock::now();
-///  for(int x=0;x<10;x++) {
-///    for(int i=0;i<mesh->LocalNx;++i) {
-///      for(int j=0;j<mesh->LocalNy;++j) {
-///#pragma ivdep
-///#pragma omp parallel for
-///        for(int k=0;k<mesh->LocalNz;++k) {
-///          result(i,j,k) = a(i,j,k) + b(i,j,k);
-///        }
-///      }
-///    }
-///  }
-  Duration elapsed2 = steady_clock::now() - start2;
-
-  // MeshIterator over block data
-  SteadyClock start3 = steady_clock::now();
-  for(int x=0;x<10;x++) {
-    for(MeshIterator i; !i.isDone(); ++i){
-      result(i.x,i.y,i.z) = a(i.x,i.y,i.z) + b(i.x,i.y,i.z);
-    }
-  }
-  Duration elapsed3 = steady_clock::now() - start3;
-
-  // DataIterator using begin(), end()
-  SteadyClock start4 = steady_clock::now();
-  for(int x=0;x<10;x++) {
-#pragma omp parallel
-    {
-    for(DataIterator i = result.beginDI(), rend=result.endDI(); i != rend; ++i){
-    //for(DataIterator i = result.iterator(); !i.done(); ++i){
-      result(i.x,i.y,i.z) = a(i.x,i.y,i.z) + b(i.x,i.y,i.z);
-    }
-    }
-}
-  Duration elapsed4 = steady_clock::now() - start4;
-
-  // DataIterator with done()
-  SteadyClock start5 = steady_clock::now();
-  for(int x=0;x<10;x++) {
-    //for(DataIterator i = begin(result); !i.done() ; ++i){
-#pragma omp parallel
-    {
-    for(DataIterator i = result.iterator(); !i.done(); ++i){
-      result(i.x,i.y,i.z) = a(i.x,i.y,i.z) + b(i.x,i.y,i.z);
-    }
-    }
-  }
-  Duration elapsed5 = steady_clock::now() - start5;
-
-  // Range based for DataIterator with indices
-///  SteadyClock start6 = steady_clock::now();
-///  for(int x=0;x<10;x++) {
-///    for(auto i : result){
-///      result(i.x,i.y,i.z) = a(i.x,i.y,i.z) + b(i.x,i.y,i.z);
-///    }
-///  }
-///  Duration elapsed6 = steady_clock::now() - start6;
-
-  // Range based for with single index
-  SteadyClock start7 = steady_clock::now();
-///  for(int x=0;x<10;x++) {
-///#pragma ivdep
-///#pragma omp parallel
-///{
-///#pragma omp single
-///  {
-///    for(auto i : result){
-///    //for(auto &i : result){
-///#pragma omp task
-///    {
-///      result[i] = a[i] + b[i];
-///    }
-///    }
-///  }
-///}
-///}
-  Duration elapsed7 = steady_clock::now() - start7;
-
-  // Range based for with single index
-  SteadyClock start8 = steady_clock::now();
-  for(int x=0;x<10;x++) {
-#pragma ivdep
-#pragma omp parallel
-    {
-    for(auto &i : result.region(RGN_ALL)){
-      result[i] = a[i] + b[i];
-    }
-    }
-  }
-  Duration elapsed8 = steady_clock::now() - start8;
+///aaa///\  // Loop over data so first test doesn't have a disadvantage from caching
+///aaa///\  for(int i=0;i<10;++i) {
+///aaa///\#pragma omp parallel for
+///aaa///\    for(int j=0;j<mesh->LocalNx*mesh->LocalNy*mesh->LocalNz;++j) {
+///aaa///\      rd[j] = ad[j] + bd[j];
+///aaa///\    }
+///aaa///\  }
+///aaa///\  
+///aaa///\  SteadyClock start1 = steady_clock::now();
+///aaa///\  int len = mesh->LocalNx*mesh->LocalNy*mesh->LocalNz;
+///aaa///\  for(int i=0;i<10;++i) {
+///aaa///\#pragma omp parallel for
+///aaa///\    for(int j=0;j<len;++j) {
+///aaa///\      rd[j] = ad[j] + bd[j];
+///aaa///\    }
+///aaa///\  }
+///aaa///\  Duration elapsed1 = steady_clock::now() - start1;
+///aaa///\
+///aaa///\  // Nested loops over block data
+///aaa///\  SteadyClock start2 = steady_clock::now();
+///aaa///\///  for(int x=0;x<10;x++) {
+///aaa///\///    for(int i=0;i<mesh->LocalNx;++i) {
+///aaa///\///      for(int j=0;j<mesh->LocalNy;++j) {
+///aaa///\///#pragma ivdep
+///aaa///\///#pragma omp parallel for
+///aaa///\///        for(int k=0;k<mesh->LocalNz;++k) {
+///aaa///\///          result(i,j,k) = a(i,j,k) + b(i,j,k);
+///aaa///\///        }
+///aaa///\///      }
+///aaa///\///    }
+///aaa///\///  }
+///aaa///\  Duration elapsed2 = steady_clock::now() - start2;
+///aaa///\
+///aaa///\  // MeshIterator over block data
+///aaa///\  SteadyClock start3 = steady_clock::now();
+///aaa///\  for(int x=0;x<10;x++) {
+///aaa///\    for(MeshIterator i; !i.isDone(); ++i){
+///aaa///\      result(i.x,i.y,i.z) = a(i.x,i.y,i.z) + b(i.x,i.y,i.z);
+///aaa///\    }
+///aaa///\  }
+///aaa///\  Duration elapsed3 = steady_clock::now() - start3;
+///aaa///\
+///aaa///\  // DataIterator using begin(), end()
+///aaa///\  SteadyClock start4 = steady_clock::now();
+///aaa///\  for(int x=0;x<10;x++) {
+///aaa///\#pragma omp parallel
+///aaa///\    {
+///aaa///\    for(DataIterator i = result.beginDI(), rend=result.endDI(); i != rend; ++i){
+///aaa///\    //for(DataIterator i = result.iterator(); !i.done(); ++i){
+///aaa///\      result(i.x,i.y,i.z) = a(i.x,i.y,i.z) + b(i.x,i.y,i.z);
+///aaa///\    }
+///aaa///\    }
+///aaa///\}
+///aaa///\  Duration elapsed4 = steady_clock::now() - start4;
+///aaa///\
+///aaa///\  // DataIterator with done()
+///aaa///\  SteadyClock start5 = steady_clock::now();
+///aaa///\  for(int x=0;x<10;x++) {
+///aaa///\    //for(DataIterator i = begin(result); !i.done() ; ++i){
+///aaa///\#pragma omp parallel
+///aaa///\    {
+///aaa///\    for(DataIterator i = result.iterator(); !i.done(); ++i){
+///aaa///\      result(i.x,i.y,i.z) = a(i.x,i.y,i.z) + b(i.x,i.y,i.z);
+///aaa///\    }
+///aaa///\    }
+///aaa///\  }
+///aaa///\  Duration elapsed5 = steady_clock::now() - start5;
+///aaa///\
+///aaa///\  // Range based for DataIterator with indices
+///aaa///\///  SteadyClock start6 = steady_clock::now();
+///aaa///\///  for(int x=0;x<10;x++) {
+///aaa///\///    for(auto i : result){
+///aaa///\///      result(i.x,i.y,i.z) = a(i.x,i.y,i.z) + b(i.x,i.y,i.z);
+///aaa///\///    }
+///aaa///\///  }
+///aaa///\///  Duration elapsed6 = steady_clock::now() - start6;
+///aaa///\
+///aaa///\  // Range based for with single index
+///aaa///\  SteadyClock start7 = steady_clock::now();
+///aaa///\///  for(int x=0;x<10;x++) {
+///aaa///\///#pragma ivdep
+///aaa///\///#pragma omp parallel
+///aaa///\///{
+///aaa///\///#pragma omp single
+///aaa///\///  {
+///aaa///\///    for(auto i : result){
+///aaa///\///    //for(auto &i : result){
+///aaa///\///#pragma omp task
+///aaa///\///    {
+///aaa///\///      result[i] = a[i] + b[i];
+///aaa///\///    }
+///aaa///\///    }
+///aaa///\///  }
+///aaa///\///}
+///aaa///\///}
+///aaa///\  Duration elapsed7 = steady_clock::now() - start7;
+///aaa///\
+///aaa///\  // Range based for with single index
+///aaa///\  SteadyClock start8 = steady_clock::now();
+///aaa///\  for(int x=0;x<10;x++) {
+///aaa///\#pragma ivdep
+///aaa///\#pragma omp parallel
+///aaa///\    {
+///aaa///\    for(auto &i : result.region(RGN_ALL)){
+///aaa///\      //output << i.x << " " << i.y << " " << i.z <<  "\n";
+///aaa///\      result[i] = a[i] + b[i];
+///aaa///\    }
+///aaa///\    }
+///aaa///\  }
+///aaa///\  Duration elapsed8 = steady_clock::now() - start8;
   
   // Range based DataIterator 
   SteadyClock start9 = steady_clock::now();
@@ -206,51 +207,61 @@ int main(int argc, char **argv) {
 #pragma omp parallel
     {
     //for (const auto &i : result) {
-    for(SingleDataIterator i = result.Siterator(); !i.done(); ++i){
+    //for(SingleDataIterator i = result.Siterator(); !i.done(); ++i){
+    //for(SingleDataIterator i = result.sdi_region(RGN_ALL); !i.done(); ++i){
+    for(SingleDataIterator i = result.sdi_region_all(); !i.done(); ++i){
+    //for(SingleDataIterator i = result.sdi_region(RGN_NOY); !i.done(); ++i){
+    //for(SingleDataIterator i = result.sdi_region(RGN_NOX); !i.done(); ++i){
       //output << "inside loop " << i.x ;
 ///      if( omp_get_thread_num() == 1 ){
 ///	//output << i.x << " " << i.y << " " << i.z << " " << omp_get_thread_num() <<  "\n";
 ///        output << i.x << " " << omp_get_thread_num() <<  "\n";
 ///      }
+      //output << i.nx << " " << i.ny << " " << i.nz <<  "\n";
+      //if( omp_get_thread_num() == 1 ){
+      //	output << i.i << " " << i.x << " " << i.y << " " << i.z <<  "\n";
+      //}
+      output << "Performing iteration: " << i.i << ", with count: " << i.icount << "\n";
       result(i) = a(i) + b(i);
+      //output << i.icount << "\n"; 
       //result[i.x] = a[i.x] + b[i.x];
     }
     }
   }
   Duration elapsed9 = steady_clock::now() - start9;
-
-  // DataIterator over fields
-///  SteadyClock start10 = steady_clock::now();
-///  for(int x=0;x<10;x++)
-///    //for(DataIterator d = DataIterator(0,mesh->LocalNx,0,mesh->LocalNy,0,mesh->LocalNz); !d.done(); ++d)
-///    for(DataIterator d = std::begin(result) ; !d.done(); ++d)
-///    //for(DataIterator d = DataIterator(0,mesh->LocalNx,0,mesh->LocalNy,0,mesh->LocalNz); d <= d.end(); ++d)
-///      result[d] = a[d] + b[d];
-///  Duration elapsed10 = steady_clock::now() - start10;
-  // DataIterator over fields
-  SteadyClock start10 = steady_clock::now();
-  for(int x=0;x<10;x++)
-#pragma omp parallel
-{
-    for(DataIterator d = result.iterator(); !d.done(); d++)
-      result[d] = a[d] + b[d];
-}
-  Duration elapsed10 = steady_clock::now() - start10;
-
-  
-  output << "TIMING\n======\n";
-  output << "C loop                     : " << elapsed1.count() << std::endl;
-  output << "----- (x,y,z) indexing ----" << std::endl;
-  output << "Nested loops               : " << elapsed2.count() << std::endl;
-  output << "MeshIterator               : " << elapsed3.count() << std::endl;
-  output << "DataIterator (begin/end)   : " << elapsed4.count() << std::endl;
-  output << "DataIterator (begin/done)  : " << elapsed5.count() << std::endl;
-///  output << "C++11 range-based for      : " << elapsed6.count() << std::endl;
-  output << "------ [i] indexing -------" << std::endl;
-  output << "Single index               : " << elapsed7.count() << std::endl;
-  output << "Three indices              : " << elapsed8.count() << std::endl;
-  output << "C++11 Range-based for      : " << elapsed9.count() << std::endl;
-  output << "DataIterator (begin/done)  : " << elapsed10.count() << std::endl;
+///aaa///\
+///aaa///\  // DataIterator over fields
+///aaa///\///  SteadyClock start10 = steady_clock::now();
+///aaa///\///  for(int x=0;x<10;x++)
+///aaa///\///    //for(DataIterator d = DataIterator(0,mesh->LocalNx,0,mesh->LocalNy,0,mesh->LocalNz); !d.done(); ++d)
+///aaa///\///    for(DataIterator d = std::begin(result) ; !d.done(); ++d)
+///aaa///\///    //for(DataIterator d = DataIterator(0,mesh->LocalNx,0,mesh->LocalNy,0,mesh->LocalNz); d <= d.end(); ++d)
+///aaa///\///      result[d] = a[d] + b[d];
+///aaa///\///  Duration elapsed10 = steady_clock::now() - start10;
+///aaa///\  // DataIterator over fields
+///aaa///\  SteadyClock start10 = steady_clock::now();
+///aaa///\  for(int x=0;x<10;x++)
+///aaa///\#pragma omp parallel
+///aaa///\{
+///aaa///\    for(DataIterator d = result.iterator(); !d.done(); d++)
+///aaa///\      result[d] = a[d] + b[d];
+///aaa///\}
+///aaa///\  Duration elapsed10 = steady_clock::now() - start10;
+///aaa///\
+///aaa///\  
+///aaa///\  output << "TIMING\n======\n";
+///aaa///\  output << "C loop                     : " << elapsed1.count() << std::endl;
+///aaa///\  output << "----- (x,y,z) indexing ----" << std::endl;
+///aaa///\  output << "Nested loops               : " << elapsed2.count() << std::endl;
+///aaa///\  output << "MeshIterator               : " << elapsed3.count() << std::endl;
+///aaa///\  output << "DataIterator (begin/end)   : " << elapsed4.count() << std::endl;
+///aaa///\  output << "DataIterator (begin/done)  : " << elapsed5.count() << std::endl;
+///aaa///\///  output << "C++11 range-based for      : " << elapsed6.count() << std::endl;
+///aaa///\  output << "------ [i] indexing -------" << std::endl;
+///aaa///\  output << "Single index               : " << elapsed7.count() << std::endl;
+///aaa///\  output << "Three indices              : " << elapsed8.count() << std::endl;
+///aaa///\  output << "C++11 Range-based for      : " << elapsed9.count() << std::endl;
+///aaa///\  output << "DataIterator (begin/done)  : " << elapsed10.count() << std::endl;
   BoutFinalise();
   return 0;
 }
