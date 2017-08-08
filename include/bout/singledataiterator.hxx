@@ -6,7 +6,6 @@
 #ifndef __SINGLEDATAITERATOR_H__
 #define __SINGLEDATAITERATOR_H__
 
-#include "bout/array.hxx"
 #include <iterator>
 #include <iostream>
 #include "unused.hxx"
@@ -104,6 +103,7 @@ public:
 #endif
     isEnd(false)
   {
+    rgn = new int [icountend];
 #ifdef _OPENMP
     omp_init(false);
 #endif
@@ -129,19 +129,20 @@ public:
     xmax(xend),   ymax(yend),   zmax(zend),
     i((x*ny+y)*nz+z), istart((xs*ny+ys)*nz+zs), imin(istart), iend((xe*ny+ye)*nz+ze), imax(iend),
     icount(0),
-    icountend((xe-xs)*(ye-ys)*(ze-zs)),
+    icountend((xe-xs+1)*(ye-ys+1)*(ze-zs+1)),
 #else
     xmin(xs),     ymin(ys),     zmin(zs),
     xmax(xe),     ymax(ye),     zmax(ze),
     imin((xs*ny+ys)*nz+zs), imax((xe*ny+ye)*nz+ze), 
     icount(0),
-    icountend((xe-xs)*(ye-ys)*(ze-zs)),
+    icountend((xe-xs+1)*(ye-ys+1)*(ze-zs+1)),
 #endif
     isEnd(true)
   {
 #ifdef _OPENMP
     omp_init(true);
 #endif
+    rgn = new int [icountend];
     make_region(xs,xe,
                 ys,ye,
                 zs,ze,
@@ -158,7 +159,7 @@ public:
   const int icountend;
   int x, y, z;
   int nx, ny, nz;
-  int rgn[800];
+  int* rgn;
 
   /// Pre-increment operator. Use this rather than post-increment when possible
   SingleDataIterator& operator++() { next(); return *this; }
