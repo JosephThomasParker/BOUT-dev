@@ -92,14 +92,14 @@ public:
     xmax(xend),   ymax(yend),   zmax(zend),
     i((x*ny+y)*nz+z), istart((xs*ny+ys)*nz+zs), imin(istart), iend((xe*ny+ye)*nz+ze), imax(iend),
     icount(0),
-    icountend((xe-xs)*(ye-ys)*(ze-zs)),
+    icountend((xe-xs+1)*(ye-ys+1)*(ze-zs+1)),
     nx(nx), ny(ny), nz(nz),
 #else
     xmin(xs),     ymin(ys),     zmin(zs),
     xmax(xe),     ymax(ye),     zmax(ze),
     imin((xs*ny+ys)*nz+zs), imax((xe*ny+ye)*nz+ze), 
     icount(0),
-    icountend((xe-xs)*(ye-ys)*(ze-zs)),
+    icountend((xe-xs+1)*(ye-ys+1)*(ze-zs+1)),
     nx(nx), ny(ny), nz(nz),
 #endif
     isEnd(false)
@@ -261,7 +261,7 @@ public:
    * using the more idiomatic it != DataIterator::end() ?
    */
   bool done() const {
-    return icount > icountend ;
+    return icount >= icountend ;
 ///#ifndef _OPENMP
 ///    //return (i > iend) || (i < istart);
 ///#else //_OPENMP

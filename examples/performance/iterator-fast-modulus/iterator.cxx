@@ -214,11 +214,15 @@ int main(int argc, char **argv) {
 
   SteadyClock start10 = steady_clock::now();
   for (int x=0;x<10;++x) {
-#pragma ivdep
 #pragma omp parallel
     {
     //for (const auto &i : result) {
-    for(SingleDataIterator i = result.Siterator(); !i.done(); ++i){
+    //for(SingleDataIterator i = result.Siterator(); !i.done(); ++i){
+#pragma ivdep
+    for(SingleDataIterator i = result.sdi_region(RGN_ALL); !i.done(); ++i){
+    //for(SingleDataIterator i = result.sdi_region(RGN_NOX); !i.done(); ++i){
+    //for(SingleDataIterator i = result.sdi_region(RGN_NOY); !i.done(); ++i){
+      //output << "Performing iteration: " << i.rgn[i.icount] << ", with count: " << i.icount << ", xy index: " << i.rgn[i.icount]/i.nz << ", z index: " << i.rgn[i.icount]%i.nz  <<"\n";
       result(i) = a(i) + b(i);
     }
     }

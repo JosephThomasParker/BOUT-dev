@@ -243,11 +243,11 @@ class Field2D : public Field, public FieldData {
   }
 
   BoutReal& operator()(const SingleDataIterator &i) {
-      return data[i.i/i.nz];
+      return data[i.rgn[i.icount]/i.nz];
   }
 
   const BoutReal& operator()(const SingleDataIterator &i) const {
-      return data[i.i/i.nz];
+      return data[i.rgn[i.icount]/i.nz];
 //////    if ( (nz & (nz-1)) != 0 ) {
 ///      return data[i.index%nz];
 //////    } else {
