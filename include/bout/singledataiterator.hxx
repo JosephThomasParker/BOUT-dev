@@ -300,14 +300,14 @@ private:
   /// Advance to the next index
   void next() {
     icount++;
-    i = rgn[icount];
+    //i = rgn[icount];
     //idx_to_xyz(i);
   }
 
   /// Rewind to the previous index
   void prev() {
     icount--;
-    i = rgn[icount];
+    //i = rgn[icount];
   }
 };
 
