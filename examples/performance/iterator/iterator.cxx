@@ -218,10 +218,11 @@ int main(int argc, char **argv) {
 ///        output << i.x << " " << omp_get_thread_num() <<  "\n";
 ///      }
       //output << i.nx << " " << i.ny << " " << i.nz <<  "\n";
-      //if( omp_get_thread_num() == 1 ){
-      //	output << i.i << " " << i.x << " " << i.y << " " << i.z <<  "\n";
-      //}
-      //output << "Performing iteration: " << i.i << ", with count: " << i.icount << "\n";
+///      if( omp_get_thread_num() == 0 ){
+///      //	output << i.i << " " << i.x << " " << i.y << " " << i.z <<  "\n";
+///      //output << "Performing iteration: " << i.i << ", with count: " << i.icount << "\n";
+///      output << "Performing iteration: " << i.rgn[i.icount] << ", with count: " << i.icount << ", xy index: " << i.rgn[i.icount]/i.nz << ", x index: "<< ((i.rgn[i.icount]/i.nz)/i.ny) << ", y index = " << (i.rgn[i.icount]/i.nz)%i.ny <<  ", z index: " << i.rgn[i.icount]%i.nz  << ", icountend: " << i.icountend << "\n";
+///      }
       result(i) = a(i) + b(i);
       //output << i.icount << "\n"; 
       //result[i.x] = a[i.x] + b[i.x]; // this vectorizes

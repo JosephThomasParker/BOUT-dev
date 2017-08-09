@@ -91,6 +91,7 @@ public:
     xmax(xend),   ymax(yend),   zmax(zend),
     i((x*ny+y)*nz+z), istart((xs*ny+ys)*nz+zs), imin(istart), iend((xe*ny+ye)*nz+ze), imax(iend),
     icount(0),
+    icountstart(0),
     icountend((xe-xs+1)*(ye-ys+1)*(ze-zs+1)),
     nx(nx), ny(ny), nz(nz),
 #else
@@ -98,18 +99,19 @@ public:
     xmax(xe),     ymax(ye),     zmax(ze),
     imin((xs*ny+ys)*nz+zs), imax((xe*ny+ye)*nz+ze), 
     icount(0),
+    icountstart(0),
     icountend((xe-xs+1)*(ye-ys+1)*(ze-zs+1)),
     nx(nx), ny(ny), nz(nz),
 #endif
     isEnd(false)
   {
-    rgn = new int [icountend];
 #ifdef _OPENMP
     omp_init(false);
 #endif
-    make_region(xs,xe,
-                    ys,ye,
-		    zs,ze,
+    rgn = new int [icountend];
+    make_region(xstart,xend,
+                    ystart,yend,
+		    zstart,zend,
 		    nx,ny,nz);
   }
 
@@ -129,12 +131,14 @@ public:
     xmax(xend),   ymax(yend),   zmax(zend),
     i((x*ny+y)*nz+z), istart((xs*ny+ys)*nz+zs), imin(istart), iend((xe*ny+ye)*nz+ze), imax(iend),
     icount(0),
+    icountstart(0),
     icountend((xe-xs+1)*(ye-ys+1)*(ze-zs+1)),
 #else
     xmin(xs),     ymin(ys),     zmin(zs),
     xmax(xe),     ymax(ye),     zmax(ze),
     imin((xs*ny+ys)*nz+zs), imax((xe*ny+ye)*nz+ze), 
     icount(0),
+    icountstart(0),
     icountend((xe-xs+1)*(ye-ys+1)*(ze-zs+1)),
 #endif
     isEnd(true)
@@ -143,9 +147,9 @@ public:
     omp_init(true);
 #endif
     rgn = new int [icountend];
-    make_region(xs,xe,
-                ys,ye,
-                zs,ze,
+    make_region(xstart,xend,
+                ystart,yend,
+                zstart,zend,
                 nx,ny,nz);
     
     next();
@@ -156,7 +160,7 @@ public:
    * Should make these private and provide getters?
    */
   int i, icount;
-  const int icountend;
+  int icountstart, icountend;
   int x, y, z;
   int nx, ny, nz;
   int* rgn;
@@ -375,22 +379,43 @@ inline void SingleDataIterator::idx_to_xyz(int i){
   output << "i = " << i << ", x = " << ((i/nz)/ny) << ", y = " << (i/nz)%ny << ", z = " << (i%nz) << "\n";
 };
 
-inline void SingleDataIterator::make_region(int xs,int xe,
-                                            int ys,int ye,
-		                            int zs,int ze,
+inline void SingleDataIterator::make_region(int xstart,int xend,
+                                            int ystart,int yend,
+		                            int zstart,int zend,
 		                            int nx,int ny,int nz){
   // Make an array of indices corresponding to a region.
 
   int j=0;
-  for(int x=xs; x<=xe ; x++){
-    for(int y=ys; y<=ye ; y++){
-      for(int z=zs; z<=ze ; z++){
-	rgn[j] = (x*ny+y)*nz+z;
-	//output << rgn[j] << " " << j << "\n";
-	j++;
+  int x = xstart;
+  int y = ystart;
+  int z = zstart;
+  
+///  if( omp_get_thread_num() == 1 ){
+///    output<<"starting xyz:"<<x<<" "<<y<<" "<<z<<" "<<xend<<" "<<yend<<" "<<zend<<"\n";
+///  }
+
+  bool done = false;
+  j=-1;
+  while( !done ){
+      j++;
+      rgn[j] = (x*ny+y)*nz+z;
+///      if( omp_get_thread_num() == 1 ){
+///	output << rgn[j] << " " << j << ", xy index: " << rgn[j]/nz << ", x index: "<< ((rgn[j]/nz)/ny) << ", y index = " << (rgn[j]/nz)%ny <<  ", z index: " << rgn[j]%nz  << ", routine's x,y,z " << x << " " << y << " " << z << ", xend, yend, zend:"<<xend<<" "<<yend<<" "<<zend<< "\n" <<std::flush;
+///      }
+      if(x == xend && y == yend && z == zend){
+	icountend = j+1;
+	done = true;
+      }
+      ++z;
+      if(z > zmax) {
+	z = zmin;
+	++y;
+	if(y > ymax) {
+	  y = ymin;
+	  ++x;
+	}
       }
     }
-  }
 };
 
 #ifdef _OPENMP
@@ -413,10 +438,17 @@ inline void SingleDataIterator::omp_init(bool end){
   // In the case of OPENMP we need to calculate the range
   int threads=omp_get_num_threads();
   if (threads > 1){
-    int work  = (imax-imin+1);
+    int ny=ymax-ymin+1;
+    int nz=zmax-zmin+1;
+    int work  = (xmax-xmin+1)*ny*nz;
     int current_thread = omp_get_thread_num();
     int begin = SDI_spread_work(work,current_thread,threads);
     int end   = SDI_spread_work(work,current_thread+1,threads);
+    icountend   = end - begin;
+///#pragma omp critical
+///    {
+///    output << "thread: "<<omp_get_thread_num()<<", begin: "<<begin<<", end: "<<end<<", icountend: "<<icountend<<"\n";
+///    }
     --end;
     zend   = (end   % nz) + zmin;
     zstart = (begin % nz) + zmin;
@@ -428,8 +460,6 @@ inline void SingleDataIterator::omp_init(bool end){
     begin /= ny;
     xend   = end;
     xstart = begin;
-    istart = (xstart*ny+ystart)*nz+zstart;
-    iend   = (xend*ny+yend)*nz+zend;
   } else {
     zstart = zmin;
     zend   = zmax;
@@ -437,16 +467,12 @@ inline void SingleDataIterator::omp_init(bool end){
     yend   = ymax;
     xstart = xmin;
     xend   = xmax;
-    istart = (xstart*ny+ystart)*nz+zstart;
-    iend   = (xend*ny+yend)*nz+zend;
   }
   if (!end){
-    i=istart;
     x=xstart;
     y=ystart;
     z=zstart;
   } else {
-    i=iend;
     x=xend;
     y=yend;
     z=zend;
