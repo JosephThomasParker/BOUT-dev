@@ -302,6 +302,7 @@ class Field3D : public Field, public FieldData {
   const iterator_t begin() const;
   const iterator_t end() const;
 
+  const std::vector<int> single_region() const; 
   /*!
    * Indexing by single index. This omits the translation
    * to and from (x,y,z) index tuples, and makes
@@ -313,10 +314,16 @@ class Field3D : public Field, public FieldData {
     return data[i.index];
   }
   BoutReal& operator[](const SingleDataIterator &i) {
+    //return data[i.icount];
     return data[i.rgn[i.icount]];
   }
   BoutReal& operator()(const SingleDataIterator &i) {
+    //return data[i.icount];
     return data[i.rgn[i.icount]];
+  }
+  BoutReal& operator()(const int &i) {
+    //return data[i.icount];
+    return data[i];
   }
 
   /*!
@@ -332,7 +339,11 @@ class Field3D : public Field, public FieldData {
   }
   const BoutReal& operator()(const SingleDataIterator &i) const {
     return data[i.rgn[i.icount]];
-    //return data[i.i];
+    //return data[i.icount];
+  }
+
+  const BoutReal& operator()(const int &i) const {
+    return data[i];
   }
   
   /*!

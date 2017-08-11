@@ -201,6 +201,7 @@ int main(int argc, char **argv) {
   Duration elapsed8 = steady_clock::now() - start8;
   
   // Range based DataIterator 
+  std::vector<int> rgn = result.single_region();
   SteadyClock start9 = steady_clock::now();
   for (int x=0;x<10;++x) {
 #pragma omp parallel
@@ -218,12 +219,14 @@ int main(int argc, char **argv) {
 ///        output << i.x << " " << omp_get_thread_num() <<  "\n";
 ///      }
       //output << i.nx << " " << i.ny << " " << i.nz <<  "\n";
-///      if( omp_get_thread_num() == 0 ){
+//      if( omp_get_thread_num() == 0 ){
 ///      //	output << i.i << " " << i.x << " " << i.y << " " << i.z <<  "\n";
 ///      //output << "Performing iteration: " << i.i << ", with count: " << i.icount << "\n";
-///      output << "Performing iteration: " << i.rgn[i.icount] << ", with count: " << i.icount << ", xy index: " << i.rgn[i.icount]/i.nz << ", x index: "<< ((i.rgn[i.icount]/i.nz)/i.ny) << ", y index = " << (i.rgn[i.icount]/i.nz)%i.ny <<  ", z index: " << i.rgn[i.icount]%i.nz  << ", icountend: " << i.icountend << "\n";
+//      output << "Performing iteration: " << i.rgn[i.icount] << ", with count: " << i.icount << ", xy index: " << i.rgn[i.icount]/i.nz << ", x index: "<< ((i.rgn[i.icount]/i.nz)/i.ny) << ", y index = " << (i.rgn[i.icount]/i.nz)%i.ny <<  ", z index: " << i.rgn[i.icount]%i.nz  << ", icountend: " << i.icountend << "\n";
+      //output << "Performing iteration: " << rgn[i.icount] << ", with count: " << i.icount << ", xy index: " << rgn[i.icount]/i.nz << ", x index: "<< ((rgn[i.icount]/i.nz)/i.ny) << ", y index = " << (rgn[i.icount]/i.nz)%i.ny <<  ", z index: " << rgn[i.icount]%i.nz  << ", icountend: " << i.icountend << "\n";
 ///      }
-      result(i) = a(i) + b(i);
+      //result(i) = a(i) + b(i);
+      result(rgn[i.icount]) = a(rgn[i.icount]) + b(rgn[i.icount]);
       //output << i.icount << "\n"; 
       //result[i.x] = a[i.x] + b[i.x]; // this vectorizes
     }

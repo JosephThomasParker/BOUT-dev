@@ -273,6 +273,16 @@ const Field3D::iterator_t Field3D::end() const {
   return iterator_t(data.size());
 }
 
+const std::vector<int> Field3D::single_region() const {
+  int len = nx*ny*nz;
+  std::vector<int> region( len );
+
+  for(int i=0;i<len;i++) {
+    region[i] = i;
+  }
+  return region;
+}
+
 const IndexRange Field3D::region(REGION rgn) const {
   switch(rgn) {
   case RGN_ALL: {
