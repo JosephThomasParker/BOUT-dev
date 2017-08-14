@@ -306,7 +306,10 @@ class Field3D : public Field, public FieldData {
   const std::vector<int> make_single_index_region(int xstart, int xend,
                                                   int ystart, int yend,
                                                   int zstart, int zend) const; 
-  const std::vector<int> single_index_region(REGION rgn) const;
+  std::vector<int> single_index_region(REGION rgn) const ;
+  void get_region(REGION rgn) ;
+  std::map<REGION, std::vector<int>> region_map ;
+
   /*!
    * Indexing by single index. This omits the translation
    * to and from (x,y,z) index tuples, and makes
@@ -319,11 +322,13 @@ class Field3D : public Field, public FieldData {
   }
   BoutReal& operator[](const SingleDataIterator &i) {
     //return data[i.icount];
-    return data[i.rgn[i.icount]];
+    //return data[i.rgn[i.icount]];
+    return data[region_map[i.rgn][i.icount]];
   }
   BoutReal& operator()(const SingleDataIterator &i) {
     //return data[i.icount];
-    return data[i.rgn[i.icount]];
+    //return data[i.rgn[i.icount]];
+    return data[region_map[i.rgn][i.icount]];
   }
   BoutReal& operator()(const int &i) {
     //return data[i.icount];
@@ -342,8 +347,9 @@ class Field3D : public Field, public FieldData {
     return data[i.i];
   }
   const BoutReal& operator()(const SingleDataIterator &i) const {
-    return data[i.rgn[i.icount]];
-    //return data[i.icount];
+    //return data[region_map[i.rgn][i.icount]];
+    //return data[i.rgn[i.icount]];
+    return data[i.icount];
   }
 
   const BoutReal& operator()(const int &i) const {
@@ -368,7 +374,7 @@ class Field3D : public Field, public FieldData {
    * 
    */
   const IndexRange region(REGION rgn) const;
-  const SingleDataIterator sdi_region(REGION rgn) const;
+  const SingleDataIterator sdi_region(REGION rgn) ;
   const SingleDataIterator sdi_region_all() const;
 
   /*!

@@ -248,7 +248,7 @@ const SingleDataIterator Field3D::Siterator() const {
   return SingleDataIterator(0, nx-1, 
                             0, ny-1,
                             0, nz-1,
-			    nx, ny, nz);
+			    nx, ny, nz, RGN_ALL);
 }
 
 const DataIterator Field3D::beginDI() const {
@@ -318,7 +318,7 @@ const std::vector<int> Field3D::make_single_index_region(int xstart, int xend,
     return region;
   }
 
-const std::vector<int> Field3D::single_index_region(REGION rgn) const {
+std::vector<int> Field3D::single_index_region(REGION rgn) const {
   switch(rgn) {
   case RGN_ALL: {
     return make_single_index_region(0, nx-1,
@@ -383,41 +383,47 @@ const IndexRange Field3D::region(REGION rgn) const {
   };
 }
 
-const SingleDataIterator Field3D::sdi_region_all() const {
-    return SingleDataIterator(0, nx-1,
-                              0, ny-1,
-                              0, nz-1,
-			      nx, ny, nz);
+void Field3D::get_region(REGION rgn) {
+  // check for existence of rgn
+  if(region_map.find(rgn) == region_map.end()){ 
+    // rgn does NOT exist
+    output << "Making region " << rgn;
+    region_map[rgn] = single_index_region(rgn);
+  } 
+  else{
+    output << "Region " << rgn << " exists";
   }
+}
 
-const SingleDataIterator Field3D::sdi_region(REGION rgn) const {
+const SingleDataIterator Field3D::sdi_region(REGION rgn) {
+  get_region(rgn);
   switch(rgn) {
   case RGN_ALL: {
     return SingleDataIterator(0, nx-1,
                               0, ny-1,
                               0, nz-1,
-			      nx, ny, nz);
+			      nx, ny, nz, rgn);
     break;
   }
   case RGN_NOBNDRY: {
     return SingleDataIterator(fieldmesh->xstart, fieldmesh->xend,
                               fieldmesh->ystart, fieldmesh->yend,
                               0, nz-1,
-			      nx, ny, nz);
+			      nx, ny, nz, rgn);
     break;
   }
   case RGN_NOX: {
     return SingleDataIterator(fieldmesh->xstart, fieldmesh->xend,
                               0, ny-1,
                               0, nz-1,
-			      nx, ny, nz);
+			      nx, ny, nz, rgn);
     break;
   }
   case RGN_NOY: {
     return SingleDataIterator(0, nx-1,
                               fieldmesh->ystart, fieldmesh->yend,
                               0, nz-1,
-			      nx, ny, nz);
+			      nx, ny, nz, rgn);
     break;
   }
   default: {
@@ -1666,3 +1672,6 @@ Field2D DC(const Field3D &f) {
   return result;
 }
 
+void Mesh::regions_init(){
+  output<<"hiiii";
+}

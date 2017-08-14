@@ -86,7 +86,7 @@ public:
   SingleDataIterator(int xs, int xe,
 	       int ys, int ye,
 	       int zs, int ze,
-	       int nx, int ny, int nz) : 
+	       int nx, int ny, int nz, REGION rgn) : 
 #ifndef _OPENMP
     x(xs), y(ys), z(zs),
     xstart(xs),   ystart(ys),   zstart(zs),
@@ -112,8 +112,6 @@ public:
 #ifdef _OPENMP
     omp_init(false);
 #endif
-    //rgn = new int [icountend];
-    //make_region(xstart,xend,ystart,yend,zstart,zend,nx,ny,nz);
   }
 
   /*!
@@ -123,7 +121,7 @@ public:
   SingleDataIterator(int xs, int xe,
 	       int ys, int ye,
 	       int zs, int ze,
-	       int nx, int ny, int nz, void* UNUSED(dummy)) : 
+	       int nx, int ny, int nz, REGION rgn, void* UNUSED(dummy)) : 
 #ifndef _OPENMP
     x(xs), y(ys), z(zs),
     xstart(xs),   ystart(ys),   zstart(zs),
@@ -161,7 +159,7 @@ public:
   int icountstart, icountend;
   int x, y, z;
   int nx, ny, nz;
-  int* rgn;
+  REGION rgn;
 
   /// Pre-increment operator. Use this rather than post-increment when possible
   SingleDataIterator& operator++() { next(); return *this; }
@@ -205,43 +203,43 @@ public:
   /*!
    * Add an offset to the index for general stencils
    */
-  const SIndices offset(int dx, int dy, int dz) const {
-    if (dz>0){
-      int zp=rgn[icount]%nz;
-      for (int j=0;j<dz;++j)
-        zp=(zp == nz-1 ? 0 : zp+1);
-      return { rgn[icount] + ny*nz*dx + nz*dy + zp , nx, ny, nz };
-    } else {
-      int zm=rgn[icount]%nz;
-      for (;dz!= 0;++dz)
-        zm = (zm == 0 ? nz-1 : zm-1);
-      return { rgn[icount] + ny*nz*dx + nz*dy + zm , nx, ny, nz};
-    }
-  }
+///  const SIndices offset(int dx, int dy, int dz) const {
+///    if (dz>0){
+///      int zp=rgn[icount]%nz;
+///      for (int j=0;j<dz;++j)
+///        zp=(zp == nz-1 ? 0 : zp+1);
+///      return { rgn[icount] + ny*nz*dx + nz*dy + zp , nx, ny, nz };
+///    } else {
+///      int zm=rgn[icount]%nz;
+///      for (;dz!= 0;++dz)
+///        zm = (zm == 0 ? nz-1 : zm-1);
+///      return { rgn[icount] + ny*nz*dx + nz*dy + zm , nx, ny, nz};
+///    }
+///  }
   
   /*
    * Shortcuts for common offsets, one cell
    * in each direction.
    */
   
-  /// The index one point +1 in x
-  //const SIndices xp() const { return { i + ny*nz , nx, ny, nz}; }
-  const SIndices xp() const { return { rgn[icount] + ny*nz , nx, ny, nz}; }
-  /// The index one point -1 in x
-  //const SIndices xm() const { return { i - ny*nz , nx, ny, nz}; }
-  const SIndices xm() const { return { rgn[icount] - ny*nz , nx, ny, nz}; }
-  /// The index one point +1 in y
-  //const SIndices yp() const { return { i + nz , nx, ny, nz}; }
-  const SIndices yp() const { return { rgn[icount] + nz , nx, ny, nz}; }
-  /// The index one point -1 in y
-  //const SIndices ym() const { return { i - nz , nx, ny, nz}; }
-  const SIndices ym() const { return { rgn[icount] - nz , nx, ny, nz}; }
-  /// The index one point +1 in z. Wraps around zend to zstart
-  //const SIndices zp() const { return { (i+1)%nz == 0 ? i-nz+1 : i+1 , nx, ny, nz}; }
-  const SIndices zp() const { return { (rgn[icount]+1)%nz == 0 ? rgn[icount]-nz+1 : rgn[icount]+1 , nx, ny, nz}; }
-  /// The index one point -1 in z. Wraps around zstart to zend
-  //const SIndices zm() const { return { i%nz == 0 ? i+nz-1 : i-1 , nx, ny, nz }; }
-  const SIndices zm() const { return { rgn[icount]%nz == 0 ? rgn[icount]+nz-1 : rgn[icount]-1 , nx, ny, nz}; }
+///  /// The index one point +1 in x
+///  //const SIndices xp() const { return { i + ny*nz , nx, ny, nz}; }
+///  const SIndices xp() const { return { rgn[icount] + ny*nz , nx, ny, nz}; }
+///  /// The index one point -1 in x
+///  //const SIndices xm() const { return { i - ny*nz , nx, ny, nz}; }
+///  const SIndices xm() const { return { rgn[icount] - ny*nz , nx, ny, nz}; }
+///  /// The index one point +1 in y
+///  //const SIndices yp() const { return { i + nz , nx, ny, nz}; }
+///  const SIndices yp() const { return { rgn[icount] + nz , nx, ny, nz}; }
+///  /// The index one point -1 in y
+///  //const SIndices ym() const { return { i - nz , nx, ny, nz}; }
+///  const SIndices ym() const { return { rgn[icount] - nz , nx, ny, nz}; }
+///  /// The index one point +1 in z. Wraps around zend to zstart
+///  //const SIndices zp() const { return { (i+1)%nz == 0 ? i-nz+1 : i+1 , nx, ny, nz}; }
+///  const SIndices zp() const { return { (rgn[icount]+1)%nz == 0 ? rgn[icount]-nz+1 : rgn[icount]+1 , nx, ny, nz}; }
+///  /// The index one point -1 in z. Wraps around zstart to zend
+///  //const SIndices zm() const { return { i%nz == 0 ? i+nz-1 : i-1 , nx, ny, nz }; }
+///  const SIndices zm() const { return { rgn[icount]%nz == 0 ? rgn[icount]+nz-1 : rgn[icount]-1 , nx, ny, nz}; }
 
   /*!
    * Resets DataIterator to the start of the range
@@ -360,18 +358,19 @@ struct SIndexRange {
   int xstart, xend;
   int ystart, yend;
   int zstart, zend;
+  REGION rgn;
   
   const SingleDataIterator begin() const {
     return SingleDataIterator(xstart, xend, 
                               ystart, yend,
                               zstart, zend,
-                              nx, ny, nz);
+                              nx, ny, nz, rgn);
   }
   const SingleDataIterator end() const {
     return SingleDataIterator(xstart, xend, 
 			      ystart, yend,
 			      zstart, zend,
-			      nx, ny, nz, DI_GET_END);
+			      nx, ny, nz, rgn, DI_GET_END);
   }
 };
 
@@ -424,44 +423,44 @@ inline std::vector<int> SingleDataIterator::make_region_all(int xstart,int xend,
   return rgn;
 };
 
-inline void SingleDataIterator::make_region(int xstart,int xend,
-                                            int ystart,int yend,
-		                            int zstart,int zend,
-		                            int nx,int ny,int nz){
-  // Make an array of indices corresponding to a region.
-
-  int j=0;
-  int x = xstart;
-  int y = ystart;
-  int z = zstart;
-  
-///  if( omp_get_thread_num() == 1 ){
-///    output<<"starting xyz:"<<x<<" "<<y<<" "<<z<<" "<<xend<<" "<<yend<<" "<<zend<<"\n";
-///  }
-
-  bool done = false;
-  j=-1;
-  while( !done ){
-      j++;
-      rgn[j] = (x*ny+y)*nz+z;
-///      if( omp_get_thread_num() == 1 ){
-///	output << rgn[j] << " " << j << ", xy index: " << rgn[j]/nz << ", x index: "<< ((rgn[j]/nz)/ny) << ", y index = " << (rgn[j]/nz)%ny <<  ", z index: " << rgn[j]%nz  << ", routine's x,y,z " << x << " " << y << " " << z << ", xend, yend, zend:"<<xend<<" "<<yend<<" "<<zend<< "\n" <<std::flush;
+///inline void SingleDataIterator::make_region(int xstart,int xend,
+///                                            int ystart,int yend,
+///		                            int zstart,int zend,
+///		                            int nx,int ny,int nz){
+///  // Make an array of indices corresponding to a region.
+///
+///  int j=0;
+///  int x = xstart;
+///  int y = ystart;
+///  int z = zstart;
+///  
+//////  if( omp_get_thread_num() == 1 ){
+//////    output<<"starting xyz:"<<x<<" "<<y<<" "<<z<<" "<<xend<<" "<<yend<<" "<<zend<<"\n";
+//////  }
+///
+///  bool done = false;
+///  j=-1;
+///  while( !done ){
+///      j++;
+///      rgn[j] = (x*ny+y)*nz+z;
+//////      if( omp_get_thread_num() == 1 ){
+//////	output << rgn[j] << " " << j << ", xy index: " << rgn[j]/nz << ", x index: "<< ((rgn[j]/nz)/ny) << ", y index = " << (rgn[j]/nz)%ny <<  ", z index: " << rgn[j]%nz  << ", routine's x,y,z " << x << " " << y << " " << z << ", xend, yend, zend:"<<xend<<" "<<yend<<" "<<zend<< "\n" <<std::flush;
+//////      }
+///      if(x == xend && y == yend && z == zend){
+///	icountend = j+1;
+///	done = true;
 ///      }
-      if(x == xend && y == yend && z == zend){
-	icountend = j+1;
-	done = true;
-      }
-      ++z;
-      if(z > zmax) {
-	z = zmin;
-	++y;
-	if(y > ymax) {
-	  y = ymin;
-	  ++x;
-	}
-      }
-    }
-};
+///      ++z;
+///      if(z > zmax) {
+///	z = zmin;
+///	++y;
+///	if(y > ymax) {
+///	  y = ymin;
+///	  ++x;
+///	}
+///      }
+///    }
+///};
 
 #ifdef _OPENMP
 inline int SDI_spread_work(int work,int cp,int np){
