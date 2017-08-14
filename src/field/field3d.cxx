@@ -387,12 +387,12 @@ void Field3D::get_region(REGION rgn) {
   // check for existence of rgn
   if(region_map.find(rgn) == region_map.end()){ 
     // rgn does NOT exist
-    output << "Making region " << rgn;
+    //output << "Making region " << rgn;
     region_map[rgn] = single_index_region(rgn);
   } 
-  else{
-    output << "Region " << rgn << " exists";
-  }
+///  else{
+///    output << "Region " << rgn << " exists";
+///  }
 }
 
 const SingleDataIterator Field3D::sdi_region(REGION rgn) {

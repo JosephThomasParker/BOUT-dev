@@ -107,6 +107,7 @@ public:
     icountend((xe-xs+1)*(ye-ys+1)*(ze-zs+1)),
     nx(nx), ny(ny), nz(nz),
 #endif
+    rgn(rgn),
     isEnd(false)
   {
 #ifdef _OPENMP
@@ -140,6 +141,7 @@ public:
     icountstart(0),
     icountend((xe-xs+1)*(ye-ys+1)*(ze-zs+1)),
 #endif
+    rgn(rgn),
     isEnd(true)
   {
 #ifdef _OPENMP
