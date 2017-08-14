@@ -283,6 +283,74 @@ const std::vector<int> Field3D::single_region() const {
   return region;
 }
 
+const std::vector<int> Field3D::make_single_index_region(int xstart, int xend,
+                                                         int ystart, int yend,
+                                                         int zstart, int zend) const {
+
+  int len = (xend-xstart+1)*(yend-ystart+1)*(zend-zstart+1);
+  std::vector<int> region( len );
+  int j = 0;
+  int x = xstart;
+  int y = ystart;
+  int z = zstart;
+
+  bool done = false;
+  j=-1;
+  while( !done ){
+      j++;
+      region[j] = (x*ny+y)*nz+z;
+///      if( omp_get_thread_num() == 1 ){
+///	output << rgn[j] << " " << j << ", xy index: " << rgn[j]/nz << ", x index: "<< ((rgn[j]/nz)/ny) << ", y index = " << (rgn[j]/nz)%ny <<  ", z index: " << rgn[j]%nz  << ", routine's x,y,z " << x << " " << y << " " << z << ", xend, yend, zend:"<<xend<<" "<<yend<<" "<<zend<< "\n" <<std::flush;
+///      }
+      if(x == xend && y == yend && z == zend){
+	done = true;
+      }
+      ++z;
+      if(z > zend) {
+	z = zstart;
+	++y;
+	if(y > yend) {
+	  y = ystart;
+	  ++x;
+	}
+      }
+    }
+    return region;
+  }
+
+const std::vector<int> Field3D::single_index_region(REGION rgn) const {
+  switch(rgn) {
+  case RGN_ALL: {
+    return make_single_index_region(0, nx-1,
+                                    0, ny-1,
+                                    0, nz-1);
+    break;
+  }
+  case RGN_NOBNDRY: {
+    return make_single_index_region(fieldmesh->xstart, fieldmesh->xend,
+                                    fieldmesh->ystart, fieldmesh->yend,
+                                    0, nz-1);
+    break;
+  }
+  case RGN_NOX: {
+    return make_single_index_region(fieldmesh->xstart, fieldmesh->xend,
+                                    0, ny-1,
+                                    0, nz-1);
+    break;
+  }
+  case RGN_NOY: {
+    return make_single_index_region(0, nx-1,
+                                    fieldmesh->ystart, fieldmesh->yend,
+                                    0, nz-1);
+    break;
+  }
+  default: {
+    throw BoutException("Field3D::region() : Requested region not implemented");
+  }
+  };
+}
+
+
 const IndexRange Field3D::region(REGION rgn) const {
   switch(rgn) {
   case RGN_ALL: {

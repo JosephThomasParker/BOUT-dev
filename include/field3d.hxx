@@ -303,6 +303,10 @@ class Field3D : public Field, public FieldData {
   const iterator_t end() const;
 
   const std::vector<int> single_region() const; 
+  const std::vector<int> make_single_index_region(int xstart, int xend,
+                                                  int ystart, int yend,
+                                                  int zstart, int zend) const; 
+  const std::vector<int> single_index_region(REGION rgn) const;
   /*!
    * Indexing by single index. This omits the translation
    * to and from (x,y,z) index tuples, and makes
