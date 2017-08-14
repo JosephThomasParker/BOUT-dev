@@ -489,7 +489,9 @@ inline void SingleDataIterator::omp_init(bool end){
     int current_thread = omp_get_thread_num();
     int begin = SDI_spread_work(work,current_thread,threads);
     int end   = SDI_spread_work(work,current_thread+1,threads);
-    icountend   = end - begin;
+    //icountend   = end - begin;
+    icountend   = end;
+    icount      = begin;
 ///#pragma omp critical
 ///    {
 ///    output << "thread: "<<omp_get_thread_num()<<", begin: "<<begin<<", end: "<<end<<", icountend: "<<icountend<<"\n";
