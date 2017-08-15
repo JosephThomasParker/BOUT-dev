@@ -86,7 +86,7 @@ public:
   SingleDataIterator(int xs, int xe,
 	       int ys, int ye,
 	       int zs, int ze,
-	       int nx, int ny, int nz, std::vector<int> rgn) : 
+	       int nx, int ny, int nz, std::vector<int>& rgn) : 
 #ifndef _OPENMP
     x(xs), y(ys), z(zs),
     xstart(xs),   ystart(ys),   zstart(zs),
@@ -122,7 +122,7 @@ public:
   SingleDataIterator(int xs, int xe,
 	       int ys, int ye,
 	       int zs, int ze,
-	       int nx, int ny, int nz, std::vector<int> rgn, void* UNUSED(dummy)) : 
+	       int nx, int ny, int nz, std::vector<int>& rgn, void* UNUSED(dummy)) : 
 #ifndef _OPENMP
     x(xs), y(ys), z(zs),
     xstart(xs),   ystart(ys),   zstart(zs),
@@ -161,7 +161,7 @@ public:
   int icountstart, icountend;
   int x, y, z;
   int nx, ny, nz;
-  std::vector<int> rgn;
+  std::vector<int>& rgn;
 
   /// Pre-increment operator. Use this rather than post-increment when possible
   SingleDataIterator& operator++() { next(); return *this; }
@@ -360,7 +360,7 @@ struct SIndexRange {
   int xstart, xend;
   int ystart, yend;
   int zstart, zend;
-  std::vector<int> rgn;
+  std::vector<int>& rgn;
   
   const SingleDataIterator begin() const {
     return SingleDataIterator(xstart, xend, 
