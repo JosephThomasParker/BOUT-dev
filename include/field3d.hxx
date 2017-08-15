@@ -323,12 +323,12 @@ class Field3D : public Field, public FieldData {
   BoutReal& operator[](const SingleDataIterator &i) {
     //return data[i.icount];
     //return data[i.rgn[i.icount]];
-    return data[region_map[i.rgn][i.icount]];
+    return data[i.rgn[i.icount]];
   }
   BoutReal& operator()(const SingleDataIterator &i) {
     //return data[i.icount];
     //return data[i.rgn[i.icount]];
-    return data[region_map[i.rgn][i.icount]];
+    return data[i.rgn[i.icount]];
   }
   BoutReal& operator()(const int &i) {
     //return data[i.icount];
@@ -348,8 +348,8 @@ class Field3D : public Field, public FieldData {
   }
   const BoutReal& operator()(const SingleDataIterator &i) const {
     //return data[region_map[i.rgn][i.icount]];
-    //return data[i.rgn[i.icount]];
-    return data[i.icount];
+    return data[i.rgn[i.icount]];
+    //return data[i.icount];
   }
 
   const BoutReal& operator()(const int &i) const {

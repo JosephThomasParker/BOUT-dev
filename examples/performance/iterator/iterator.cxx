@@ -218,18 +218,18 @@ int main(int argc, char **argv) {
 ///        output << i.x << " " << omp_get_thread_num() <<  "\n";
 ///      }
       //output << i.nx << " " << i.ny << " " << i.nz <<  "\n";
-      if( omp_get_thread_num() == 0 ){
-///      //	output << i.i << " " << i.x << " " << i.y << " " << i.z <<  "\n";
-///      //output << "Performing iteration: " << i.i << ", with count: " << i.icount << "\n";
-//      output << "Performing iteration: " << i.rgn[i.icount] << ", with count: " << i.icount << ", xy index: " << i.rgn[i.icount]/i.nz << ", x index: "<< ((i.rgn[i.icount]/i.nz)/i.ny) << ", y index = " << (i.rgn[i.icount]/i.nz)%i.ny <<  ", z index: " << i.rgn[i.icount]%i.nz  << ", icountend: " << i.icountend << "\n";
-      //output << "Performing iteration: " << rgn[i.icount] << ", with count: " << i.icount << ", xy index: " << rgn[i.icount]/i.nz << ", x index: "<< ((rgn[i.icount]/i.nz)/i.ny) << ", y index = " << (rgn[i.icount]/i.nz)%i.ny <<  ", z index: " << rgn[i.icount]%i.nz  << ", icountend: " << i.icountend << "\n";
-      output << "Performing iteration: " << result.region_map[i.rgn][i.icount] << ", with count: " << i.icount << ", xy index: " << result.region_map[i.rgn][i.icount]/i.nz << ", x index: "<< ((result.region_map[i.rgn][i.icount]/i.nz)/i.ny) << ", y index = " << (result.region_map[i.rgn][i.icount]/i.nz)%i.ny <<  ", z index: " << result.region_map[i.rgn][i.icount]%i.nz  << ", icountend: " << i.icountend << "\n";
-      }
+///      if( omp_get_thread_num() == 0 ){
+//////      //	output << i.i << " " << i.x << " " << i.y << " " << i.z <<  "\n";
+//////      //output << "Performing iteration: " << i.i << ", with count: " << i.icount << "\n";
+/////      output << "Performing iteration: " << i.rgn[i.icount] << ", with count: " << i.icount << ", xy index: " << i.rgn[i.icount]/i.nz << ", x index: "<< ((i.rgn[i.icount]/i.nz)/i.ny) << ", y index = " << (i.rgn[i.icount]/i.nz)%i.ny <<  ", z index: " << i.rgn[i.icount]%i.nz  << ", icountend: " << i.icountend << "\n";
+///      //output << "Performing iteration: " << rgn[i.icount] << ", with count: " << i.icount << ", xy index: " << rgn[i.icount]/i.nz << ", x index: "<< ((rgn[i.icount]/i.nz)/i.ny) << ", y index = " << (rgn[i.icount]/i.nz)%i.ny <<  ", z index: " << rgn[i.icount]%i.nz  << ", icountend: " << i.icountend << "\n";
+///      output << "Performing iteration: " << result.region_map[i.rgn][i.icount] << ", with count: " << i.icount << ", xy index: " << result.region_map[i.rgn][i.icount]/i.nz << ", x index: "<< ((result.region_map[i.rgn][i.icount]/i.nz)/i.ny) << ", y index = " << (result.region_map[i.rgn][i.icount]/i.nz)%i.ny <<  ", z index: " << result.region_map[i.rgn][i.icount]%i.nz  << ", icountend: " << i.icountend << "\n";
+///      }
       //result(i) = a(i) + b(i);
       //result(rgn[i.icount]) = a(rgn[i.icount]) + b(rgn[i.icount]);
       //result(result.region_map[RGN_NOY][i.icount]) = a(result.region_map[RGN_NOY][i.icount]) + b(result.region_map[RGN_NOY][i.icount]);
       //result(result.region_map[i.rgn][i.icount]) = a(result.region_map[i.rgn][i.icount]) + b(result.region_map[i.rgn][i.icount]);
-      result(i) = result(i) + b(i);
+      result(i) = a(i) + b(i);
       //output << i.icount << "\n"; 
       //result[i.x] = a[i.x] + b[i.x]; // this vectorizes
     }

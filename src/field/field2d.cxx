@@ -152,12 +152,12 @@ const DataIterator Field2D::iterator() const {
                       0, 0);
 }
 
-const SingleDataIterator Field2D::Siterator() const {
-  return SingleDataIterator(0, mesh->LocalNx-1, 
-                      0, mesh->LocalNy-1,
-                      0, 0,
-		      nx, ny, 1, RGN_ALL);
-}
+///const SingleDataIterator Field2D::Siterator() const {
+///  return SingleDataIterator(0, mesh->LocalNx-1, 
+///                      0, mesh->LocalNy-1,
+///                      0, 0,
+///		      nx, ny, 1, RGN_ALL);
+///}
 
 const DataIterator Field2D::begin() const {
   /*return DataIterator(0, 0, mesh->LocalNx-1,
@@ -204,41 +204,41 @@ const IndexRange Field2D::region(REGION rgn) const {
   };
 }
 
-const SingleDataIterator Field2D::sdi_region(REGION rgn) const {
-  switch(rgn) {
-  case RGN_ALL: {
-    return SingleDataIterator(0, nx-1,
-                              0, ny-1,
-                              0, 0,
-			      nx, ny, nz, RGN_ALL);
-    break;
-  }
-  case RGN_NOBNDRY: {
-    return SingleDataIterator(fieldmesh->xstart, fieldmesh->xend,
-                              fieldmesh->ystart, fieldmesh->yend,
-                              0, 0,
-			      nx, ny, nz, RGN_NOBNDRY);
-    break;
-  }
-  case RGN_NOX: {
-    return SingleDataIterator(fieldmesh->xstart, fieldmesh->xend,
-                              0, ny-1,
-                              0, 0,
-			      nx, ny, nz, RGN_NOX);
-    break;
-  }
-  case RGN_NOY: {
-    return SingleDataIterator(0, nx-1,
-                              fieldmesh->ystart, fieldmesh->yend,
-                              0, 0,
-			      nx, ny, nz, RGN_NOY);
-    break;
-  }
-  default: {
-    throw BoutException("Field2D::region() : Requested region not implemented");
-  }
-  };
-}
+///const SingleDataIterator Field2D::sdi_region(REGION rgn) const {
+///  switch(rgn) {
+///  case RGN_ALL: {
+///    return SingleDataIterator(0, nx-1,
+///                              0, ny-1,
+///                              0, 0,
+///			      nx, ny, nz, RGN_ALL);
+///    break;
+///  }
+///  case RGN_NOBNDRY: {
+///    return SingleDataIterator(fieldmesh->xstart, fieldmesh->xend,
+///                              fieldmesh->ystart, fieldmesh->yend,
+///                              0, 0,
+///			      nx, ny, nz, RGN_NOBNDRY);
+///    break;
+///  }
+///  case RGN_NOX: {
+///    return SingleDataIterator(fieldmesh->xstart, fieldmesh->xend,
+///                              0, ny-1,
+///                              0, 0,
+///			      nx, ny, nz, RGN_NOX);
+///    break;
+///  }
+///  case RGN_NOY: {
+///    return SingleDataIterator(0, nx-1,
+///                              fieldmesh->ystart, fieldmesh->yend,
+///                              0, 0,
+///			      nx, ny, nz, RGN_NOY);
+///    break;
+///  }
+///  default: {
+///    throw BoutException("Field2D::region() : Requested region not implemented");
+///  }
+///  };
+///}
 
 ///////// Operators
 

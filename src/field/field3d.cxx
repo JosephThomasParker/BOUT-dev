@@ -244,12 +244,12 @@ const DataIterator Field3D::iterator() const {
                       0, nz-1);
 }
 
-const SingleDataIterator Field3D::Siterator() const {
-  return SingleDataIterator(0, nx-1, 
-                            0, ny-1,
-                            0, nz-1,
-			    nx, ny, nz, RGN_ALL);
-}
+///const SingleDataIterator Field3D::Siterator() const {
+///  return SingleDataIterator(0, nx-1, 
+///                            0, ny-1,
+///                            0, nz-1,
+///			    nx, ny, nz, RGN_ALL);
+///}
 
 const DataIterator Field3D::beginDI() const {
   return DataIterator(0, nx-1, 
@@ -402,28 +402,28 @@ const SingleDataIterator Field3D::sdi_region(REGION rgn) {
     return SingleDataIterator(0, nx-1,
                               0, ny-1,
                               0, nz-1,
-			      nx, ny, nz, rgn);
+			      nx, ny, nz, region_map[rgn]);
     break;
   }
   case RGN_NOBNDRY: {
     return SingleDataIterator(fieldmesh->xstart, fieldmesh->xend,
                               fieldmesh->ystart, fieldmesh->yend,
                               0, nz-1,
-			      nx, ny, nz, rgn);
+			      nx, ny, nz, region_map[rgn]);
     break;
   }
   case RGN_NOX: {
     return SingleDataIterator(fieldmesh->xstart, fieldmesh->xend,
                               0, ny-1,
                               0, nz-1,
-			      nx, ny, nz, rgn);
+			      nx, ny, nz, region_map[rgn]);
     break;
   }
   case RGN_NOY: {
     return SingleDataIterator(0, nx-1,
                               fieldmesh->ystart, fieldmesh->yend,
                               0, nz-1,
-			      nx, ny, nz, rgn);
+			      nx, ny, nz, region_map[rgn]);
     break;
   }
   default: {
@@ -1212,7 +1212,7 @@ F3D_OP_FPERP(*);
     result.allocate();                                                \
     _Pragma("omp parallel")                                           \
     {                                                                 \
-      for(SingleDataIterator i = result.Siterator(); !i.done(); ++i){ \
+      for(SingleDataIterator i = result.sdi_region(RGN_ALL); !i.done(); ++i){ \
         result(i) = lhs(i) op rhs(i);                                 \
       }                                                               \
     }                                                                 \
@@ -1246,7 +1246,7 @@ F3D_OP_FIELD(/, Field2D);   // Field3D / Field2D
     result.allocate();                                          \
     _Pragma("omp parallel")                                     \
     {                                                           \
-      for(SingleDataIterator i = result.Siterator(); !i.done(); ++i){  \
+      for(SingleDataIterator i = result.sdi_region(RGN_ALL); !i.done(); ++i){  \
         result(i) = lhs(i) op rhs;                              \
       }                                                         \
     }                                                           \
@@ -1265,7 +1265,7 @@ F3D_OP_REAL(/); // Field3D / BoutReal
     result.allocate();                                          \
     _Pragma("omp parallel")                                     \
     {                                                           \
-      for(SingleDataIterator i = result.Siterator(); !i.done(); ++i){  \
+      for(SingleDataIterator i = result.sdi_region(RGN_ALL); !i.done(); ++i){  \
         result(i) = lhs op rhs(i);                              \
       }                                                         \
     }                                                           \
@@ -1429,7 +1429,7 @@ BoutReal max(const Field3D &f, bool allpe) {
     /* Loop over domain */                                 \
     _Pragma("omp parallel")                                \
     {                                                      \
-      for(SingleDataIterator d = result.Siterator(); !d.done(); ++d){  \
+      for(SingleDataIterator d = result.sdi_region(RGN_ALL); !d.done(); ++d){  \
         result[d] = func(f[d]);                                         \
         /* If checking is set to 3 or higher, test result */           \
         ASSERT3(finite(result[d]));                        \
