@@ -396,7 +396,10 @@ void Field3D::get_region(REGION rgn) {
 }
 
 const SingleDataIterator Field3D::sdi_region(REGION rgn) {
+#pragma omp critical
+{
   get_region(rgn);
+}
   switch(rgn) {
   case RGN_ALL: {
     return SingleDataIterator(0, nx-1,
