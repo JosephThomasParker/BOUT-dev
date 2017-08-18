@@ -60,6 +60,8 @@ Field3D::Field3D(Mesh *msh) : background(nullptr), fieldmesh(msh), deriv(nullptr
   location = CELL_CENTRE; // Cell centred variable by default
 
   boundaryIsSet = false;
+  
+  set_region_map_set();
 }
 
 /// Doesn't copy any data, just create a new reference to the same data (copy on change later)
@@ -283,6 +285,19 @@ const std::vector<int> Field3D::single_region() const {
   return region;
 }
 
+std::map<REGION,bool> Field3D::set_region_map_set() const {
+  // region_set is a map from REGION to bool stating whether the rgn
+  // vector for this REGION has been set. Initially none are set, so
+  // make all bools false.
+  std::map<REGION,bool> region_map_set;
+  region_map_set[RGN_ALL] = false;
+  region_map_set[RGN_NOX] = false;
+  region_map_set[RGN_NOY] = false;
+  region_map_set[RGN_NOBNDRY] = false;
+
+  return region_map_set;
+}
+
 const std::vector<int> Field3D::make_single_index_region(int xstart, int xend,
                                                          int ystart, int yend,
                                                          int zstart, int zend) const {
@@ -384,22 +399,25 @@ const IndexRange Field3D::region(REGION rgn) const {
 }
 
 void Field3D::get_region(REGION rgn) {
-  // check for existence of rgn
-  if(region_map.find(rgn) == region_map.end()){ 
-    // rgn does NOT exist
-    //output << "Making region " << rgn;
+  // Check the map has finished being made.
+  // Simply checking that the map exists with
+  //   if(region_map.find(rgn) == region_map.end()){ 
+  // leads to segfaults.
+
+  if( region_map_set[rgn] == false ){
+#pragma omp master
+{
     region_map[rgn] = single_index_region(rgn);
+    region_map_set[rgn] = true;
+}
+// All threads must wait for region_map to be made.
+// This synchronization is skipped in subsequent steps.
+#pragma omp barrier
   } 
-///  else{
-///    output << "Region " << rgn << " exists";
-///  }
 }
 
 const SingleDataIterator Field3D::sdi_region(REGION rgn) {
-#pragma omp critical
-{
   get_region(rgn);
-}
   switch(rgn) {
   case RGN_ALL: {
     return SingleDataIterator(0, nx-1,

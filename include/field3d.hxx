@@ -309,6 +309,8 @@ class Field3D : public Field, public FieldData {
   std::vector<int> single_index_region(REGION rgn) const ;
   void get_region(REGION rgn) ;
   std::map<REGION, std::vector<int>> region_map ;
+  std::map<REGION, bool> region_map_set ;
+  std::map<REGION, bool> set_region_map_set() const ;
 
   /*!
    * Indexing by single index. This omits the translation
@@ -321,13 +323,9 @@ class Field3D : public Field, public FieldData {
     return data[i.index];
   }
   BoutReal& operator[](const SingleDataIterator &i) {
-    //return data[i.icount];
-    //return data[i.rgn[i.icount]];
     return data[i.rgn[i.icount]];
   }
   BoutReal& operator()(const SingleDataIterator &i) {
-    //return data[i.icount];
-    //return data[i.rgn[i.icount]];
     return data[i.rgn[i.icount]];
   }
   BoutReal& operator()(const int &i) {
@@ -347,9 +345,7 @@ class Field3D : public Field, public FieldData {
     return data[i.i];
   }
   const BoutReal& operator()(const SingleDataIterator &i) const {
-    //return data[region_map[i.rgn][i.icount]];
     return data[i.rgn[i.icount]];
-    //return data[i.icount];
   }
 
   const BoutReal& operator()(const int &i) const {

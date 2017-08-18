@@ -161,7 +161,7 @@ public:
   int icountstart, icountend;
   int x, y, z;
   int nx, ny, nz;
-  std::vector<int>& rgn;
+  const std::vector<int>& rgn;
 
   /// Pre-increment operator. Use this rather than post-increment when possible
   SingleDataIterator& operator++() { next(); return *this; }
