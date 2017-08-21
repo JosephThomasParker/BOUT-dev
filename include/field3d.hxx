@@ -275,7 +275,6 @@ class Field3D : public Field, public FieldData {
   // Data access
   
   const DataIterator iterator() const;
-  const SingleDataIterator Siterator() const;
 
   /// Iterator type over single index
   /// This is a wrapper around an integer, and prevents
@@ -371,7 +370,6 @@ class Field3D : public Field, public FieldData {
    */
   const IndexRange region(REGION rgn) const;
   const SingleDataIterator sdi_region(REGION rgn) ;
-  const SingleDataIterator sdi_region_all() const;
 
   /*!
    * Direct data access using DataIterator object.

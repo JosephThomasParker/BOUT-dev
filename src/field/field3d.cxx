@@ -147,6 +147,9 @@ Field3D::~Field3D() {
   
   if((ydown_field != this) && (ydown_field != nullptr))
     delete ydown_field;
+
+  // State that region map is not known
+  set_region_map_set();
 }
 
 void Field3D::allocate() {
@@ -245,13 +248,6 @@ const DataIterator Field3D::iterator() const {
                       0, ny-1,
                       0, nz-1);
 }
-
-///const SingleDataIterator Field3D::Siterator() const {
-///  return SingleDataIterator(0, nx-1, 
-///                            0, ny-1,
-///                            0, nz-1,
-///			    nx, ny, nz, RGN_ALL);
-///}
 
 const DataIterator Field3D::beginDI() const {
   return DataIterator(0, nx-1, 
@@ -404,16 +400,21 @@ void Field3D::get_region(REGION rgn) {
   //   if(region_map.find(rgn) == region_map.end()){ 
   // leads to segfaults.
 
+  //output<<"in get_region "<<omp_get_thread_num()<<" map set ?"<<region_map_set[rgn]<<"REGION "<<rgn<<"\n ";
   if( region_map_set[rgn] == false ){
+    //output<<"in get_region FALSE "<<omp_get_thread_num()<<"\n ";
 #pragma omp master
 {
+    //output<<"setting map on thread: "<<omp_get_thread_num()<<"\n ";
     region_map[rgn] = single_index_region(rgn);
-    region_map_set[rgn] = true;
 }
 // All threads must wait for region_map to be made.
 // This synchronization is skipped in subsequent steps.
+    //output<<"in get_region waiting at barrier "<<omp_get_thread_num()<<"\n ";
 #pragma omp barrier
   } 
+    region_map_set[rgn] = true;
+    //output<<"leaving get_region "<<omp_get_thread_num()<<"\n ";
 }
 
 const SingleDataIterator Field3D::sdi_region(REGION rgn) {
@@ -1227,7 +1228,7 @@ F3D_OP_FPERP(-);
 F3D_OP_FPERP(/);
 F3D_OP_FPERP(*);
 
-#define F3D_OP_F3D(op)                                                                   \
+#define F3D_OP_F3D(op)                                                \
   const Field3D operator op(const Field3D &lhs, const Field3D &rhs) { \
     Field3D result;                                                   \
     result.allocate();                                                \
@@ -1250,8 +1251,12 @@ F3D_OP_F3D(/);   // Field3D / Field3D
   const Field3D operator op(const Field3D &lhs, const ftype &rhs) { \
     Field3D result;                                                 \
     result.allocate();                                              \
-    for(auto i : result.region(RGN_ALL))                            \
-      result[i] = lhs[i] op rhs[i];                                 \
+    _Pragma("omp parallel")                                         \
+    {                                                               \
+    for(SingleDataIterator i = result.sdi_region(RGN_ALL); !i.done(); ++i){ \
+      result(i) = lhs(i) op rhs(i);                                 \
+    }                                                               \
+    }                                                               \
     result.setLocation( lhs.getLocation() );                        \
     return result;                                                  \
   }

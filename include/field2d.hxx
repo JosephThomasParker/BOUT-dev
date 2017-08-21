@@ -131,7 +131,6 @@ class Field2D : public Field, public FieldData {
 
   /// Iterator over the Field2D indices
   const DataIterator iterator() const;
-  const SingleDataIterator Siterator() const;
 
   const DataIterator begin() const;
   const DataIterator end() const;
@@ -167,9 +166,11 @@ class Field2D : public Field, public FieldData {
   }
 
   BoutReal& operator()(const SIndices &i) {
+    //output << i.i << " " << i.nz << "\n";
     return data[i.i/i.nz];
   }
   const BoutReal& operator()(const SIndices &i) const {
+    //output << i.i << " " << i.nz << "\n";
     return data[i.i/i.nz];
   }
 

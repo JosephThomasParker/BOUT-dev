@@ -21,7 +21,6 @@ int SDI_spread_work(int num_work, int thread, int max_thread);
  */
 struct SIndices {
   int i; // index of array
-  int j; // count index
   int nx;
   int ny;
   int nz;
@@ -111,6 +110,7 @@ public:
     isEnd(false)
   {
 #ifdef _OPENMP
+    //output<<"In SDI constructor"<<omp_get_thread_num()<<"\n ";
     omp_init(false);
 #endif
   }
@@ -205,43 +205,43 @@ public:
   /*!
    * Add an offset to the index for general stencils
    */
-///  const SIndices offset(int dx, int dy, int dz) const {
-///    if (dz>0){
-///      int zp=rgn[icount]%nz;
-///      for (int j=0;j<dz;++j)
-///        zp=(zp == nz-1 ? 0 : zp+1);
-///      return { rgn[icount] + ny*nz*dx + nz*dy + zp , nx, ny, nz };
-///    } else {
-///      int zm=rgn[icount]%nz;
-///      for (;dz!= 0;++dz)
-///        zm = (zm == 0 ? nz-1 : zm-1);
-///      return { rgn[icount] + ny*nz*dx + nz*dy + zm , nx, ny, nz};
-///    }
-///  }
+  const SIndices offset(int dx, int dy, int dz) const {
+    if (dz>0){
+      int zp=rgn[icount]%nz;
+      for (int j=0;j<dz;++j)
+        zp=(zp == nz-1 ? 0 : zp+1);
+      return { rgn[icount] + ny*nz*dx + nz*dy + zp , nx, ny, nz };
+    } else {
+      int zm=rgn[icount]%nz;
+      for (;dz!= 0;++dz)
+        zm = (zm == 0 ? nz-1 : zm-1);
+      return { rgn[icount] + ny*nz*dx + nz*dy + zm , nx, ny, nz};
+    }
+  }
   
   /*
    * Shortcuts for common offsets, one cell
    * in each direction.
    */
   
-///  /// The index one point +1 in x
-///  //const SIndices xp() const { return { i + ny*nz , nx, ny, nz}; }
-///  const SIndices xp() const { return { rgn[icount] + ny*nz , nx, ny, nz}; }
-///  /// The index one point -1 in x
-///  //const SIndices xm() const { return { i - ny*nz , nx, ny, nz}; }
-///  const SIndices xm() const { return { rgn[icount] - ny*nz , nx, ny, nz}; }
-///  /// The index one point +1 in y
-///  //const SIndices yp() const { return { i + nz , nx, ny, nz}; }
-///  const SIndices yp() const { return { rgn[icount] + nz , nx, ny, nz}; }
-///  /// The index one point -1 in y
-///  //const SIndices ym() const { return { i - nz , nx, ny, nz}; }
-///  const SIndices ym() const { return { rgn[icount] - nz , nx, ny, nz}; }
-///  /// The index one point +1 in z. Wraps around zend to zstart
-///  //const SIndices zp() const { return { (i+1)%nz == 0 ? i-nz+1 : i+1 , nx, ny, nz}; }
-///  const SIndices zp() const { return { (rgn[icount]+1)%nz == 0 ? rgn[icount]-nz+1 : rgn[icount]+1 , nx, ny, nz}; }
-///  /// The index one point -1 in z. Wraps around zstart to zend
-///  //const SIndices zm() const { return { i%nz == 0 ? i+nz-1 : i-1 , nx, ny, nz }; }
-///  const SIndices zm() const { return { rgn[icount]%nz == 0 ? rgn[icount]+nz-1 : rgn[icount]-1 , nx, ny, nz}; }
+  /// The index one point +1 in x
+  //const SIndices xp() const { return { i + ny*nz , nx, ny, nz}; }
+  const SIndices xp() const { return { rgn[icount] + ny*nz , nx, ny, nz}; }
+  /// The index one point -1 in x
+  //const SIndices xm() const { return { i - ny*nz , nx, ny, nz}; }
+  const SIndices xm() const { return { rgn[icount] - ny*nz , nx, ny, nz}; }
+  /// The index one point +1 in y
+  //const SIndices yp() const { return { i + nz , nx, ny, nz}; }
+  const SIndices yp() const { return { rgn[icount] + nz , nx, ny, nz}; }
+  /// The index one point -1 in y
+  //const SIndices ym() const { return { i - nz , nx, ny, nz}; }
+  const SIndices ym() const { return { rgn[icount] - nz , nx, ny, nz}; }
+  /// The index one point +1 in z. Wraps around zend to zstart
+  //const SIndices zp() const { return { (i+1)%nz == 0 ? i-nz+1 : i+1 , nx, ny, nz}; }
+  const SIndices zp() const { return { (rgn[icount]+1)%nz == 0 ? rgn[icount]-nz+1 : rgn[icount]+1 , nx, ny, nz}; }
+  /// The index one point -1 in z. Wraps around zstart to zend
+  //const SIndices zm() const { return { i%nz == 0 ? i+nz-1 : i-1 , nx, ny, nz }; }
+  const SIndices zm() const { return { rgn[icount]%nz == 0 ? rgn[icount]+nz-1 : rgn[icount]-1 , nx, ny, nz}; }
 
   /*!
    * Resets DataIterator to the start of the range

@@ -700,25 +700,32 @@ const Field3D bracket(const Field3D &f, const Field2D &g, BRACKET_METHOD method,
 
 #pragma omp parallel
     {
-///    for(SingleDataIterator i = result.Siterator(); !i.done(); ++i){
-///          // J++ = DDZ(f)*DDX(g) - DDX(f)*DDZ(g)
-///          BoutReal Jpp = ( (f(i.zp()) - f(i.zm()))*
-///                                (g(i.xp()) - g(i.xm())) ) ;
-///	                       // - (f(i.xp()) - f(i.xm()))*(g(i.zp()) - g(i.zm())) ) ; // this line is zero
-///          // J+x
-///          BoutReal Jpx = ( g(i.xp())*(f(i.offset(1,0,1))-f(i.offset(1,0,-1))) -
-///                                g(i.xm())*(f(i.offset(-1,0,1))-f(i.offset(-1,0,-1))) -
-///                                g(i.zp())*(f(i.offset(1,0,1))-f(i.offset(-1,0,1))) +
-///                                g(i.zm())*(f(i.offset(1,0,-1))-f(i.offset(-1,0,-1)))) ;
-///
-///          // Jx+
-///          BoutReal Jxp = ( g(i.offset(1,0,1))*(f(i.zp())-f(i.xp())) -
-///                                g(i.offset(-1,0,-1))*(f(i.xm())-f(i.zm())) -
-///                                g(i.offset(-1,0,1))*(f(i.zp())-f(i.xm())) +
-///                                g(i.offset(1,0,-1))*(f(i.xp())-f(i.zm()))) ;
-///          
-///          result(i) = 0.25 * (Jpp + Jpx + Jxp) / ( 3.0 * metric->dx(i) * metric->dz);
-///        }
+    //output << "BRACKET_ARAKAWA_SDI "<<omp_get_thread_num()<<"\n";
+    for(SingleDataIterator i = result.sdi_region(RGN_ALL); !i.done(); ++i){
+          // J++ = DDZ(f)*DDX(g) - DDX(f)*DDZ(g)
+	  //output<<omp_get_thread_num()<<" Jpp\n";
+	  //output<<omp_get_thread_num()<<" icount "<<i.icount<<"\n";
+	  //output<<omp_get_thread_num()<<" rgn: "<<i.rgn[i.icount]<<"\n";
+          BoutReal Jpp = ( (f(i.zp()) - f(i.zm()))*
+                                (g(i.xp()) - g(i.xm())) ) ;
+	                       // - (f(i.xp()) - f(i.xm()))*(g(i.zp()) - g(i.zm())) ) ; // this line is zero
+          // J+x
+	  //output << "Jpx\n";
+          BoutReal Jpx = ( g(i.xp())*(f(i.offset(1,0,1))-f(i.offset(1,0,-1))) -
+                                g(i.xm())*(f(i.offset(-1,0,1))-f(i.offset(-1,0,-1))) -
+                                g(i.zp())*(f(i.offset(1,0,1))-f(i.offset(-1,0,1))) +
+                                g(i.zm())*(f(i.offset(1,0,-1))-f(i.offset(-1,0,-1)))) ;
+
+          // Jx+
+	  //output << "Jxp\n";
+          BoutReal Jxp = ( g(i.offset(1,0,1))*(f(i.zp())-f(i.xp())) -
+                                g(i.offset(-1,0,-1))*(f(i.xm())-f(i.zm())) -
+                                g(i.offset(-1,0,1))*(f(i.zp())-f(i.xm())) +
+                                g(i.offset(1,0,-1))*(f(i.xp())-f(i.zm()))) ;
+          
+	  //output << "result\n";
+          result(i) = 0.25 * (Jpp + Jpx + Jxp)  / ( 3.0 * metric->dx(i) * metric->dz);
+        }
     }
     break;
   }
