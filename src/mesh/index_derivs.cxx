@@ -1411,14 +1411,22 @@ const Field3D Mesh::applyYdiff(const Field3D &var, Mesh::deriv_func func, Mesh::
       if (mesh->ystart > 1) {
         // More than one guard cell, so set pp and mm values
         // This allows higher-order methods to be used
-        for(const auto &i : result.region(RGN_NOBNDRY)) {
+///        for(const auto &i : result.region(RGN_NOBNDRY)) {
+///          s.c = var_fa[i];
+///          s.p = var_fa[i.yp()];
+///          s.m = var_fa[i.ym()];
+///          s.pp = var_fa[i.offset(0,2,0)];
+///          s.mm = var_fa[i.offset(0,-2,0)];
+#pragma omp parallel
+	{
+        for(SingleDataIterator i = result.sdi_region(RGN_NOBNDRY); !i.done(); ++i){
           // Set stencils
           stencil s;
-          s.c = var_fa[i];
-          s.p = var_fa[i.yp()];
-          s.m = var_fa[i.ym()];
-          s.pp = var_fa[i.offset(0,2,0)];
-          s.mm = var_fa[i.offset(0,-2,0)];
+          s.c = var_fa(i);
+          s.p = var_fa(i.yp());
+          s.m = var_fa(i.ym());
+          s.pp = var_fa(i.offset(0,2,0));
+          s.mm = var_fa(i.offset(0,-2,0));
           
           if ((location == CELL_CENTRE) && (loc == CELL_YLOW)) {
             // Producing a stencil centred around a lower Y value
@@ -1430,16 +1438,27 @@ const Field3D Mesh::applyYdiff(const Field3D &var, Mesh::deriv_func func, Mesh::
             s.m  = s.c;
           }
           
-          result[i] = func(s);
+          result(i) = func(s);
         }
+	}
       } else {
         // Only one guard cell, so no pp or mm values
-        for(const auto &i : result.region(RGN_NOBNDRY)) {
+///        for(const auto &i : result.region(RGN_NOBNDRY)) {
+///          // Set stencils
+///          stencil s;
+///          s.c = var_fa[i];
+///          s.p = var_fa[i.yp()];
+///          s.m = var_fa[i.ym()];
+///          s.pp = nan("");
+///          s.mm = nan("");
+#pragma omp parallel
+	{
+        for(SingleDataIterator i = result.sdi_region(RGN_NOBNDRY); !i.done(); ++i){
           // Set stencils
           stencil s;
-          s.c = var_fa[i];
-          s.p = var_fa[i.yp()];
-          s.m = var_fa[i.ym()];
+          s.c = var_fa(i);
+          s.p = var_fa(i.yp());
+          s.m = var_fa(i.ym());
           s.pp = nan("");
           s.mm = nan("");
           
@@ -1453,8 +1472,9 @@ const Field3D Mesh::applyYdiff(const Field3D &var, Mesh::deriv_func func, Mesh::
             s.m  = s.c;
           }
           
-          result[i] = func(s);
+          result(i) = func(s);
         }
+	}
       }
       
     } else {
@@ -1463,29 +1483,51 @@ const Field3D Mesh::applyYdiff(const Field3D &var, Mesh::deriv_func func, Mesh::
       if (mesh->ystart > 1) {
         // More than one guard cell, so set pp and mm values
         // This allows higher-order methods to be used
-        for(const auto &i : result.region(RGN_NOBNDRY)) {
+///        for(const auto &i : result.region(RGN_NOBNDRY)) {
+///          // Set stencils
+///          stencil s;
+///          s.c = var_fa[i];
+///          s.p = var_fa[i.yp()];
+///          s.m = var_fa[i.ym()];
+///          s.pp = var_fa[i.offset(0,2,0)];
+///          s.mm = var_fa[i.offset(0,-2,0)];
+#pragma omp parallel
+	{
+        for(SingleDataIterator i = result.sdi_region(RGN_NOBNDRY); !i.done(); ++i){
           // Set stencils
           stencil s;
-          s.c = var_fa[i];
-          s.p = var_fa[i.yp()];
-          s.m = var_fa[i.ym()];
-          s.pp = var_fa[i.offset(0,2,0)];
-          s.mm = var_fa[i.offset(0,-2,0)];
+          s.c = var_fa(i);
+          s.p = var_fa(i.yp());
+          s.m = var_fa(i.ym());
+          s.pp = var_fa(i.offset(0,2,0));
+          s.mm = var_fa(i.offset(0,-2,0));
           
-          result[i] = func(s);
+          result(i) = func(s);
+	}
         }
       } else {
         // Only one guard cell, so no pp or mm values
-        for(const auto &i : result.region(RGN_NOBNDRY)) {
+///        for(const auto &i : result.region(RGN_NOBNDRY)) {
+///          // Set stencils
+///          stencil s;
+///          s.c = var_fa[i];
+///          s.p = var_fa[i.yp()];
+///          s.m = var_fa[i.ym()];
+///          s.pp = nan("");
+///          s.mm = nan("");
+#pragma omp parallel
+	{
+        for(SingleDataIterator i = result.sdi_region(RGN_NOBNDRY); !i.done(); ++i){
           // Set stencils
           stencil s;
-          s.c = var_fa[i];
-          s.p = var_fa[i.yp()];
-          s.m = var_fa[i.ym()];
+          s.c = var_fa(i);
+          s.p = var_fa(i.yp());
+          s.m = var_fa(i.ym());
           s.pp = nan("");
           s.mm = nan("");
           
-          result[i] = func(s);
+          result(i) = func(s);
+	}
         }
       }
     }
