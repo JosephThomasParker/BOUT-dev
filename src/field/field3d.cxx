@@ -93,6 +93,8 @@ Field3D::Field3D(const Field3D& f) : background(nullptr),
   location = f.location;
  
   boundaryIsSet = false;
+
+  set_region_map_set();
 }
 
 Field3D::Field3D(const Field2D& f) : background(nullptr), fieldmesh(nullptr), deriv(nullptr), yup_field(nullptr), ydown_field(nullptr) {
@@ -102,6 +104,8 @@ Field3D::Field3D(const Field2D& f) : background(nullptr), fieldmesh(nullptr), de
   location = CELL_CENTRE; // Cell centred variable by default
   
   boundaryIsSet = false;
+
+  set_region_map_set();
 
   fieldmesh = mesh;
   nx = fieldmesh->LocalNx;
@@ -118,6 +122,8 @@ Field3D::Field3D(const BoutReal val) : background(nullptr), fieldmesh(nullptr), 
   location = CELL_CENTRE; // Cell centred variable by default
   
   boundaryIsSet = false;
+
+  set_region_map_set();
 
   fieldmesh = mesh;
   nx = fieldmesh->LocalNx;
