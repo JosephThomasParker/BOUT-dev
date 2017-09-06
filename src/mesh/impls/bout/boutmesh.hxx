@@ -26,6 +26,14 @@ class BoutMesh : public Mesh {
   /// Read in the mesh from data sources
   int load();
 
+  void get_region(REGION rgn);
+  std::map<REGION,bool> set_region_map_set() const ;
+  std::map<REGION,bool> region_map_set;
+  const std::vector<int> make_single_index_region(int xstart, int xend,
+                                                           int ystart, int yend,
+                                                           int zstart, int zend) const ;
+  std::vector<int> single_index_region(REGION rgn) const ;
+
   /////////////////////////////////////////////
   // Communicate variables
 
@@ -276,5 +284,6 @@ class BoutMesh : public Mesh {
   /// Copy data from a buffer back into the fields
   int unpack_data(const vector<FieldData*> &var_list, int xge, int xlt, int yge, int ylt, BoutReal *buffer);
 };
+
 
 #endif // __BOUTMESH_H__

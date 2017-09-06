@@ -38,6 +38,7 @@
 #include <bout/constants.hxx>
 #include <bout/assert.hxx>
 #include <bout/scorepwrapper.hxx>
+#include <bout/mesh.hxx>
 
 /// Constructor
 Field3D::Field3D(Mesh *msh) : background(nullptr), fieldmesh(msh), deriv(nullptr), yup_field(nullptr), ydown_field(nullptr) {
@@ -62,7 +63,7 @@ Field3D::Field3D(Mesh *msh) : background(nullptr), fieldmesh(msh), deriv(nullptr
 
   boundaryIsSet = false;
   
-  set_region_map_set();
+  //set_region_map_set();
 }
 
 /// Doesn't copy any data, just create a new reference to the same data (copy on change later)
@@ -95,7 +96,7 @@ Field3D::Field3D(const Field3D& f) : background(nullptr),
  
   boundaryIsSet = false;
 
-  set_region_map_set();
+  //set_region_map_set();
 }
 
 Field3D::Field3D(const Field2D& f) : background(nullptr), fieldmesh(nullptr), deriv(nullptr), yup_field(nullptr), ydown_field(nullptr) {
@@ -106,7 +107,7 @@ Field3D::Field3D(const Field2D& f) : background(nullptr), fieldmesh(nullptr), de
   
   boundaryIsSet = false;
 
-  set_region_map_set();
+  //set_region_map_set();
 
   fieldmesh = mesh;
   nx = fieldmesh->LocalNx;
@@ -124,7 +125,7 @@ Field3D::Field3D(const BoutReal val) : background(nullptr), fieldmesh(nullptr), 
   
   boundaryIsSet = false;
 
-  set_region_map_set();
+  //set_region_map_set();
 
   fieldmesh = mesh;
   nx = fieldmesh->LocalNx;
@@ -156,7 +157,7 @@ Field3D::~Field3D() {
     delete ydown_field;
 
   // State that region map is not known
-  set_region_map_set();
+  //set_region_map_set();
 }
 
 void Field3D::allocate() {
@@ -278,97 +279,97 @@ const Field3D::iterator_t Field3D::end() const {
   return iterator_t(data.size());
 }
 
-const std::vector<int> Field3D::single_region() const {
-  int len = nx*ny*nz;
-  std::vector<int> region( len );
+///const std::vector<int> Field3D::single_region() const {
+///  int len = nx*ny*nz;
+///  std::vector<int> region( len );
+///
+///  for(int i=0;i<len;i++) {
+///    region[i] = i;
+///  }
+///  return region;
+///}
 
-  for(int i=0;i<len;i++) {
-    region[i] = i;
-  }
-  return region;
-}
-
-std::map<REGION,bool> Field3D::set_region_map_set() const {
-  // region_set is a map from REGION to bool stating whether the rgn
-  // vector for this REGION has been set. Initially none are set, so
-  // make all bools false.
-  std::map<REGION,bool> region_map_set;
-  region_map_set[RGN_ALL] = false;
-  region_map_set[RGN_NOX] = false;
-  region_map_set[RGN_NOY] = false;
-  region_map_set[RGN_NOBNDRY] = false;
-
-  return region_map_set;
-}
-
-const std::vector<int> Field3D::make_single_index_region(int xstart, int xend,
-                                                         int ystart, int yend,
-                                                         int zstart, int zend) const {
-
-  int len = (xend-xstart+1)*(yend-ystart+1)*(zend-zstart+1);
-  std::vector<int> region( len );
-  int j = 0;
-  int x = xstart;
-  int y = ystart;
-  int z = zstart;
-
-  bool done = false;
-  j=-1;
-  while( !done ){
-      j++;
-      region[j] = (x*ny+y)*nz+z;
-///      if( omp_get_thread_num() == 1 ){
-///	output << rgn[j] << " " << j << ", xy index: " << rgn[j]/nz << ", x index: "<< ((rgn[j]/nz)/ny) << ", y index = " << (rgn[j]/nz)%ny <<  ", z index: " << rgn[j]%nz  << ", routine's x,y,z " << x << " " << y << " " << z << ", xend, yend, zend:"<<xend<<" "<<yend<<" "<<zend<< "\n" <<std::flush;
+///std::map<REGION,bool> Field3D::set_region_map_set() const {
+///  // region_set is a map from REGION to bool stating whether the rgn
+///  // vector for this REGION has been set. Initially none are set, so
+///  // make all bools false.
+///  std::map<REGION,bool> region_map_set;
+///  region_map_set[RGN_ALL] = false;
+///  region_map_set[RGN_NOX] = false;
+///  region_map_set[RGN_NOY] = false;
+///  region_map_set[RGN_NOBNDRY] = false;
+///
+///  return region_map_set;
+///}
+///
+///const std::vector<int> Field3D::make_single_index_region(int xstart, int xend,
+///                                                         int ystart, int yend,
+///                                                         int zstart, int zend) const {
+///
+///  int len = (xend-xstart+1)*(yend-ystart+1)*(zend-zstart+1);
+///  std::vector<int> region( len );
+///  int j = 0;
+///  int x = xstart;
+///  int y = ystart;
+///  int z = zstart;
+///
+///  bool done = false;
+///  j=-1;
+///  while( !done ){
+///      j++;
+///      region[j] = (x*ny+y)*nz+z;
+//////      if( omp_get_thread_num() == 1 ){
+//////	output << rgn[j] << " " << j << ", xy index: " << rgn[j]/nz << ", x index: "<< ((rgn[j]/nz)/ny) << ", y index = " << (rgn[j]/nz)%ny <<  ", z index: " << rgn[j]%nz  << ", routine's x,y,z " << x << " " << y << " " << z << ", xend, yend, zend:"<<xend<<" "<<yend<<" "<<zend<< "\n" <<std::flush;
+//////      }
+///      if(x == xend && y == yend && z == zend){
+///	done = true;
 ///      }
-      if(x == xend && y == yend && z == zend){
-	done = true;
-      }
-      ++z;
-      if(z > zend) {
-	z = zstart;
-	++y;
-	if(y > yend) {
-	  y = ystart;
-	  ++x;
-	}
-      }
-    }
-    return region;
-  }
-
-std::vector<int> Field3D::single_index_region(REGION rgn) const {
-  switch(rgn) {
-  case RGN_ALL: {
-    return make_single_index_region(0, nx-1,
-                                    0, ny-1,
-                                    0, nz-1);
-    break;
-  }
-  case RGN_NOBNDRY: {
-    return make_single_index_region(fieldmesh->xstart, fieldmesh->xend,
-                                    fieldmesh->ystart, fieldmesh->yend,
-                                    0, nz-1);
-    break;
-  }
-  case RGN_NOX: {
-    return make_single_index_region(fieldmesh->xstart, fieldmesh->xend,
-                                    0, ny-1,
-                                    0, nz-1);
-    break;
-  }
-  case RGN_NOY: {
-    return make_single_index_region(0, nx-1,
-                                    fieldmesh->ystart, fieldmesh->yend,
-                                    0, nz-1);
-    break;
-  }
-  default: {
-    throw BoutException("Field3D::region() : Requested region not implemented");
-  }
-  };
-}
-
-
+///      ++z;
+///      if(z > zend) {
+///	z = zstart;
+///	++y;
+///	if(y > yend) {
+///	  y = ystart;
+///	  ++x;
+///	}
+///      }
+///    }
+///    return region;
+///  }
+///
+///std::vector<int> Field3D::single_index_region(REGION rgn) const {
+///  switch(rgn) {
+///  case RGN_ALL: {
+///    return make_single_index_region(0, nx-1,
+///                                    0, ny-1,
+///                                    0, nz-1);
+///    break;
+///  }
+///  case RGN_NOBNDRY: {
+///    return make_single_index_region(fieldmesh->xstart, fieldmesh->xend,
+///                                    fieldmesh->ystart, fieldmesh->yend,
+///                                    0, nz-1);
+///    break;
+///  }
+///  case RGN_NOX: {
+///    return make_single_index_region(fieldmesh->xstart, fieldmesh->xend,
+///                                    0, ny-1,
+///                                    0, nz-1);
+///    break;
+///  }
+///  case RGN_NOY: {
+///    return make_single_index_region(0, nx-1,
+///                                    fieldmesh->ystart, fieldmesh->yend,
+///                                    0, nz-1);
+///    break;
+///  }
+///  default: {
+///    throw BoutException("Field3D::region() : Requested region not implemented");
+///  }
+///  };
+///}
+///
+///
 const IndexRange Field3D::region(REGION rgn) const {
   switch(rgn) {
   case RGN_ALL: {
@@ -400,59 +401,59 @@ const IndexRange Field3D::region(REGION rgn) const {
   }
   };
 }
-
-void Field3D::get_region(REGION rgn) {
-  // Check the map has finished being made.
-  // Simply checking that the map exists with
-  //   if(region_map.find(rgn) == region_map.end()){ 
-  // leads to segfaults.
-
-  //output<<"in get_region "<<omp_get_thread_num()<<" map set ?"<<region_map_set[rgn]<<"REGION "<<rgn<<"\n ";
-  if( region_map_set[rgn] == false ){
-    //output<<"in get_region FALSE "<<omp_get_thread_num()<<"\n ";
-#pragma omp master
-{
-    //output<<"setting map on thread: "<<omp_get_thread_num()<<"\n ";
-    region_map[rgn] = single_index_region(rgn);
-}
-// All threads must wait for region_map to be made.
-// This synchronization is skipped in subsequent steps.
-    //output<<"in get_region waiting at barrier "<<omp_get_thread_num()<<"\n ";
-#pragma omp barrier
-  } 
-    region_map_set[rgn] = true;
-    //output<<"leaving get_region "<<omp_get_thread_num()<<"\n ";
-}
+///
+///void Field3D::get_region(REGION rgn) {
+///  // Check the map has finished being made.
+///  // Simply checking that the map exists with
+///  //   if(region_map.find(rgn) == region_map.end()){ 
+///  // leads to segfaults.
+///
+///  //output<<"in get_region "<<omp_get_thread_num()<<" map set ?"<<region_map_set[rgn]<<"REGION "<<rgn<<"\n ";
+///  if( region_map_set[rgn] == false ){
+///    //output<<"in get_region FALSE "<<omp_get_thread_num()<<"\n ";
+///#pragma omp master
+///{
+///    //output<<"setting map on thread: "<<omp_get_thread_num()<<"\n ";
+///    region_map[rgn] = single_index_region(rgn);
+///}
+///// All threads must wait for region_map to be made.
+///// This synchronization is skipped in subsequent steps.
+///    //output<<"in get_region waiting at barrier "<<omp_get_thread_num()<<"\n ";
+///#pragma omp barrier
+///  } 
+///    region_map_set[rgn] = true;
+///    //output<<"leaving get_region "<<omp_get_thread_num()<<"\n ";
+///}
 
 const SingleDataIterator Field3D::sdi_region(REGION rgn) {
-  get_region(rgn);
+  //get_region(rgn);
   switch(rgn) {
   case RGN_ALL: {
     return SingleDataIterator(0, nx-1,
                               0, ny-1,
                               0, nz-1,
-			      nx, ny, nz, region_map[rgn]);
+			      nx, ny, nz, fieldmesh->region_map[rgn]);
     break;
   }
   case RGN_NOBNDRY: {
     return SingleDataIterator(fieldmesh->xstart, fieldmesh->xend,
                               fieldmesh->ystart, fieldmesh->yend,
                               0, nz-1,
-			      nx, ny, nz, region_map[rgn]);
+			      nx, ny, nz, fieldmesh->region_map[rgn]);
     break;
   }
   case RGN_NOX: {
     return SingleDataIterator(fieldmesh->xstart, fieldmesh->xend,
                               0, ny-1,
                               0, nz-1,
-			      nx, ny, nz, region_map[rgn]);
+			      nx, ny, nz, fieldmesh->region_map[rgn]);
     break;
   }
   case RGN_NOY: {
     return SingleDataIterator(0, nx-1,
                               fieldmesh->ystart, fieldmesh->yend,
                               0, nz-1,
-			      nx, ny, nz, region_map[rgn]);
+			      nx, ny, nz, fieldmesh->region_map[rgn]);
     break;
   }
   default: {

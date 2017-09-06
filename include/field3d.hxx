@@ -301,15 +301,15 @@ class Field3D : public Field, public FieldData {
   const iterator_t begin() const;
   const iterator_t end() const;
 
-  const std::vector<int> single_region() const; 
-  const std::vector<int> make_single_index_region(int xstart, int xend,
-                                                  int ystart, int yend,
-                                                  int zstart, int zend) const; 
-  std::vector<int> single_index_region(REGION rgn) const ;
-  void get_region(REGION rgn) ;
-  std::map<REGION, std::vector<int>> region_map ;
-  std::map<REGION, bool> region_map_set ;
-  std::map<REGION, bool> set_region_map_set() const ;
+///  const std::vector<int> single_region() const; 
+///  const std::vector<int> make_single_index_region(int xstart, int xend,
+///                                                  int ystart, int yend,
+///                                                  int zstart, int zend) const; 
+///  std::vector<int> single_index_region(REGION rgn) const ;
+///  void get_region(REGION rgn) ;
+///  std::map<REGION, std::vector<int>> region_map ;
+///  std::map<REGION, bool> region_map_set ;
+///  std::map<REGION, bool> set_region_map_set() const ;
 
   /*!
    * Indexing by single index. This omits the translation
