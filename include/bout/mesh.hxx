@@ -620,6 +620,9 @@ class Mesh {
   
   // Initialise derivatives
   void derivs_init(Options* options);
+
+  // Initialise region index vectors
+  void regions_init();
   
   // Loop over mesh, applying a stencil in the X direction
   const Field2D applyXdiff(const Field2D &var, deriv_func func, inner_boundary_deriv_func func_in, outer_boundary_deriv_func func_out, CELL_LOC loc = CELL_DEFAULT);

@@ -85,6 +85,7 @@ const Field2D DDX(const Field2D &f) {
 ////////////// Y DERIVATIVE /////////////////
 
 const Field3D DDY(const Field3D &f, CELL_LOC outloc, DIFF_METHOD method) {
+  TRACE("derivs::DDY( Field3D )");
   return mesh->indexDDY(f,outloc, method) / mesh->coordinates()->dy;
 }
 

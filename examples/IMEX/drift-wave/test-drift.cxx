@@ -1,5 +1,6 @@
 
 #include <bout/physicsmodel.hxx>
+#include <bout/scorepwrapper.hxx>
 
 #include <invert_laplace.hxx>
 
@@ -27,6 +28,7 @@ protected:
   }
   
   int convective(BoutReal time) {
+SCOREP0()
     // Non-stiff parts of the problem here
     // Here just the nonlinear advection
     
@@ -49,6 +51,7 @@ protected:
   }
   
   int diffusive(BoutReal time) {
+SCOREP0()
     // Parallel dynamics treated implicitly
     
     // Solve for potential

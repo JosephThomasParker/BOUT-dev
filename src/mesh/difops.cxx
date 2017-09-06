@@ -40,6 +40,7 @@
 
 #include <math.h>
 #include <stdlib.h>
+#include <bout/scorepwrapper.hxx>
 
 /*******************************************************************************
 * Grad_par
@@ -607,6 +608,7 @@ const Field2D bracket(const Field2D &f, const Field2D &g, BRACKET_METHOD method,
 }
 
 const Field3D bracket(const Field3D &f, const Field2D &g, BRACKET_METHOD method, CELL_LOC outloc, Solver *solver) {
+SCOREP0()
   TRACE("bracket(Field3D, Field2D)");
   
   Field3D result;

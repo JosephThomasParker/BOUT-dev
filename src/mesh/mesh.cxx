@@ -37,6 +37,9 @@ Mesh::Mesh(GridDataSource *s, Options* opt) : source(s), coords(0), options(opt)
   
   // Initialise derivatives
   derivs_init(options);  // in index_derivs.cxx for now
+
+  // Initialise index vectors defining regions of the mesh
+  //regions_init();
 }
 
 Mesh::~Mesh() {

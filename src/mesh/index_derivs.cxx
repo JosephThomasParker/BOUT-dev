@@ -60,6 +60,7 @@
 #include <output.hxx>
 
 #include <bout/mesh.hxx>
+#include <bout/scorepwrapper.hxx>
 
 /*******************************************************************************
  * Limiters
@@ -1234,6 +1235,7 @@ const Field3D Mesh::applyXdiff(const Field3D &var, Mesh::deriv_func func, Mesh::
 // Y derivative
 
 const Field2D Mesh::applyYdiff(const Field2D &var, Mesh::deriv_func func, Mesh::inner_boundary_deriv_func func_in, Mesh::outer_boundary_deriv_func func_out, CELL_LOC loc) {
+  TRACE("mesh::applyYdiff( Field2D )");
   if (var.getNy() == 1) {
     return 0.;
   }
@@ -1340,6 +1342,9 @@ const Field2D Mesh::applyYdiff(const Field2D &var, Mesh::deriv_func func, Mesh::
 }
 
 const Field3D Mesh::applyYdiff(const Field3D &var, Mesh::deriv_func func, Mesh::inner_boundary_deriv_func func_in, Mesh::outer_boundary_deriv_func func_out, CELL_LOC loc) {
+SCOREP0()
+  TRACE("mesh::applyYdiff( Field3D )");
+  //output<<"mesh::applyYdiff( Field3D )";
   if (var.getNy() == 1){
     return 0.;
   }
@@ -1355,19 +1360,45 @@ const Field3D Mesh::applyYdiff(const Field3D &var, Mesh::deriv_func func, Mesh::
     // Field "var" has distinct yup and ydown fields which
     // will be used to calculate a derivative along 
     // the magnetic field
+    TRACE("mesh::applyYdiff, has yup/ydown");
+    //output<<"mesh::applyYdiff, has yup/ydown";
     
     if (mesh->StaggerGrids && (loc != CELL_DEFAULT) && (loc != var.getLocation())) {
       // Staggered differencing
+      TRACE("mesh::applyYdiff, staggered");
+      output<<"mesh::applyYdiff, staggered";
 
       // Cell location of the input field
       CELL_LOC location = var.getLocation();
       
-      for(const auto &i : result.region(RGN_NOBNDRY)) {
+///      for(const auto &i : result.region(RGN_NOBNDRY)) {
+///        // Set stencils
+///        stencil s;
+///        s.c = var[i];
+///        s.p = var.yup()[i.yp()];
+///        s.m = var.ydown()[i.ym()];
+///        s.pp = nan("");
+///        s.mm = nan("");
+///        
+///        if ((location == CELL_CENTRE) && (loc == CELL_YLOW)) {
+///          // Producing a stencil centred around a lower Y value
+///          s.pp = s.p;
+///          s.p  = s.c;
+///        } else if(location == CELL_YLOW) {
+///          // Stencil centred around a cell centre
+///          s.mm = s.m;
+///          s.m  = s.c;
+///        }
+///
+///        result[i] = func(s);
+#pragma omp parallel
+{
+      for(SingleDataIterator i = result.sdi_region(RGN_NOBNDRY); !i.done(); ++i){
         // Set stencils
         stencil s;
-        s.c = var[i];
-        s.p = var.yup()[i.yp()];
-        s.m = var.ydown()[i.ym()];
+        s.c = var(i);
+        s.p = var.yup()(i.yp());
+        s.m = var.ydown()(i.ym());
         s.pp = nan("");
         s.mm = nan("");
         
@@ -1381,29 +1412,49 @@ const Field3D Mesh::applyYdiff(const Field3D &var, Mesh::deriv_func func, Mesh::
           s.m  = s.c;
         }
 
-        result[i] = func(s);
+        result(i) = func(s);
       }
+}
     } else {
       // Non-staggered
-      for(const auto &i : result.region(RGN_NOBNDRY)) {
+      TRACE("mesh::applyYdiff, no staggered");
+      output<<"mesh::applyYdiff, no staggered";
+///      for(const auto &i : result.region(RGN_NOBNDRY)) {
+///        // Set stencils
+///        stencil s;
+///        s.c = var[i];
+///        s.p = var.yup()[i.yp()];
+///        s.m = var.ydown()[i.ym()];
+///        s.pp = nan("");
+///        s.mm = nan("");
+///        
+///        result[i] = func(s);
+#pragma omp parallel
+{
+      for(SingleDataIterator i = result.sdi_region(RGN_NOBNDRY); !i.done(); ++i){
         // Set stencils
         stencil s;
-        s.c = var[i];
-        s.p = var.yup()[i.yp()];
-        s.m = var.ydown()[i.ym()];
+        s.c = var(i);
+        s.p = var.yup()(i.yp());
+        s.m = var.ydown()(i.ym());
         s.pp = nan("");
         s.mm = nan("");
         
-        result[i] = func(s);
+        result(i) = func(s);
       }
+}
     }
   }else {
     // var has no yup/ydown fields, so we need to shift into field-aligned coordinates
+    TRACE("mesh::applyYdiff, no yup/ydown");
+    //output<<"mesh::applyYdiff, no yup/ydown";
     
     Field3D var_fa = mesh->toFieldAligned(var);
     
     if (mesh->StaggerGrids && (loc != CELL_DEFAULT) && (loc != var.getLocation())) {
       // Staggered differencing
+      TRACE("mesh::applyYdiff, staggered");
+      //output<<"mesh::applyYdiff, staggered";
       
       // Cell location of the input field
       CELL_LOC location = var.getLocation();
@@ -1479,10 +1530,14 @@ const Field3D Mesh::applyYdiff(const Field3D &var, Mesh::deriv_func func, Mesh::
       
     } else {
       // Non-staggered differencing
+      TRACE("mesh::applyYdiff, no staggered");
+      //output<<"mesh::applyYdiff, no staggered";
       
       if (mesh->ystart > 1) {
         // More than one guard cell, so set pp and mm values
         // This allows higher-order methods to be used
+        TRACE("mesh::applyYdiff, >1 guard");
+        output<<"mesh::applyYdiff, >1 guard";
 ///        for(const auto &i : result.region(RGN_NOBNDRY)) {
 ///          // Set stencils
 ///          stencil s;
@@ -1491,15 +1546,27 @@ const Field3D Mesh::applyYdiff(const Field3D &var, Mesh::deriv_func func, Mesh::
 ///          s.m = var_fa[i.ym()];
 ///          s.pp = var_fa[i.offset(0,2,0)];
 ///          s.mm = var_fa[i.offset(0,-2,0)];
+///          result[i] = func(s);
 #pragma omp parallel
 	{
         for(SingleDataIterator i = result.sdi_region(RGN_NOBNDRY); !i.done(); ++i){
+          //output<<omp_get_thread_num()<<" count "<<i.icount<<" rgn "<<i.rgn[i.icount]<<"\n";
           // Set stencils
           stencil s;
+          //output<<"s.c\n";
+          TRACE("sc");
           s.c = var_fa(i);
+          //output<<"s.p\n";
+          TRACE("sp");
           s.p = var_fa(i.yp());
+          //output<<"s.m\n";
+          TRACE("sm");
           s.m = var_fa(i.ym());
+          //output<<"s.pp\n";
+          TRACE("spp");
           s.pp = var_fa(i.offset(0,2,0));
+          //output<<"s.mm\n";
+          TRACE("smm");
           s.mm = var_fa(i.offset(0,-2,0));
           
           result(i) = func(s);
@@ -1507,6 +1574,8 @@ const Field3D Mesh::applyYdiff(const Field3D &var, Mesh::deriv_func func, Mesh::
         }
       } else {
         // Only one guard cell, so no pp or mm values
+        TRACE("mesh::applyYdiff, only 1 guard");
+        output<<"mesh::applyYdiff, only 1 guard";
 ///        for(const auto &i : result.region(RGN_NOBNDRY)) {
 ///          // Set stencils
 ///          stencil s;
@@ -1765,6 +1834,7 @@ const Field2D Mesh::indexDDX(const Field2D &f) {
 ////////////// Y DERIVATIVE /////////////////
 
 const Field3D Mesh::indexDDY(const Field3D &f, CELL_LOC outloc, DIFF_METHOD method) {
+  TRACE("index_derivs::indexDDY( Field3D )");
   Mesh::deriv_func func = fDDY; // Set to default function
   Mesh::inner_boundary_deriv_func func_in = fDDY_in;
   Mesh::outer_boundary_deriv_func func_out = fDDY_out;
