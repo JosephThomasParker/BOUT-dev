@@ -249,8 +249,8 @@ class Field2D : public Field, public FieldData {
   }
 
   const BoutReal& operator()(const SingleDataIterator &i) const {
-      //return data[i.rgn[i.icount]/i.nz];
-      return data[i.icount/i.nz];
+      return data[i.rgn[i.icount]/i.nz];
+      //return data[i.icount/i.nz];
 //////    if ( (nz & (nz-1)) != 0 ) {
 ///      return data[i.index%nz];
 //////    } else {
@@ -265,7 +265,8 @@ class Field2D : public Field, public FieldData {
   }
 
   const BoutReal& operator[](const SingleDataIterator &i) const {
-      return data[i.i/i.nz];
+      return data[i.rgn[i.icount]/i.nz];
+      //return data[i.i/i.nz];
 //////    if ( (nz & (nz-1)) != 0 ) {
 ///      return data[i.index%nz];
 //////    } else {
@@ -314,6 +315,8 @@ class Field2D : public Field, public FieldData {
   void setYStencil(forward_stencil &fval, const bindex &bx, CELL_LOC loc = CELL_DEFAULT) const;
   void setYStencil(backward_stencil &fval, const bindex &bx, CELL_LOC loc = CELL_DEFAULT) const;
   void setZStencil(stencil &fval, const bindex &bx, CELL_LOC loc = CELL_DEFAULT) const;
+
+  void setZStencil(stencil &fval, const SingleDataIterator &i, CELL_LOC loc = CELL_DEFAULT) const;
   
   // FieldData virtual functions
 

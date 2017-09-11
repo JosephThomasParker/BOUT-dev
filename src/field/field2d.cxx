@@ -391,6 +391,10 @@ void Field2D::setZStencil(stencil &fval, const bindex &bx, CELL_LOC UNUSED(loc))
   fval = operator()(bx.jx,bx.jy);
 }
 
+void Field2D::setZStencil(stencil &fval, const SingleDataIterator &i, CELL_LOC UNUSED(loc)) const {
+  fval = operator()(i);
+}
+
 ///////////////////// FieldData VIRTUAL FUNCTIONS //////////
 
 int Field2D::getData(int x, int y, int z, void *vptr) const {

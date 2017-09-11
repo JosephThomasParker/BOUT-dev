@@ -90,6 +90,14 @@ class FieldPerp : public Field {
   const BoutReal& operator[](const Indices &i) const {
     return operator()(i.x, i.z);
   }
+
+  const BoutReal& operator()(const SingleDataIterator &i) const {
+      return data[i.rgn[i.icount]/i.ny];
+  }
+
+  const BoutReal& operator()(const SIndices &i) const {
+    return data[i.i/i.ny];
+  }
   
   /*!
    * Returns the y index at which this field is defined
@@ -226,6 +234,8 @@ class FieldPerp : public Field {
   void setXStencil(stencil &fval, const bindex &bx, CELL_LOC loc = CELL_DEFAULT) const;
   void setYStencil(stencil &fval, const bindex &bx, CELL_LOC loc = CELL_DEFAULT) const;
   void setZStencil(stencil &fval, const bindex &bx, CELL_LOC loc = CELL_DEFAULT) const;
+
+  void setZStencil(stencil &fval, const SingleDataIterator &i, CELL_LOC loc = CELL_DEFAULT) const;
   
  private:
   int yindex; ///< The Y index at which this FieldPerp is defined

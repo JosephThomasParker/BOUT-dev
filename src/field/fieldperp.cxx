@@ -163,6 +163,13 @@ void FieldPerp::setZStencil(stencil &fval, const bindex &bx, CELL_LOC UNUSED(loc
   fval.mm = (*this)(bx.jx,bx.jz2m);
 }
 
+void FieldPerp::setZStencil(stencil &fval, const SingleDataIterator &i, CELL_LOC UNUSED(loc)) const {
+  fval.p = (*this)(i.zp());
+  fval.m = (*this)(i.zm());
+  fval.pp = (*this)(i.offset(0,0,2));
+  fval.mm = (*this)(i.offset(0,0,-2));
+}
+
 ////////////// NON-MEMBER OVERLOADED OPERATORS //////////////
 
 // Operator on FieldPerp and another field

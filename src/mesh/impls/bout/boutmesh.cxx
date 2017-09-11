@@ -2707,9 +2707,12 @@ const std::vector<int> BoutMesh::make_single_index_region(int xstart, int xend,
   int x = xstart;
   int y = ystart;
   int z = zstart;
-  int nx = LocalNx;
-  int ny = LocalNy;
-  int nz = LocalNz;
+///  int nx = LocalNx;
+///  int ny = LocalNy;
+///  int nz = LocalNz;
+  int nx = GlobalNx;
+  int ny = GlobalNy;
+  int nz = GlobalNz;
 
   bool done = false;
   j=-1;
@@ -2762,7 +2765,7 @@ std::vector<int> BoutMesh::single_index_region(REGION rgn) const {
     break;
   }
   default: {
-    throw BoutException("Field3D::region() : Requested region not implemented");
+    throw BoutException("BoutMesh::region() : Requested region not implemented");
   }
   };
 }

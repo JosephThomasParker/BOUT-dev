@@ -39,6 +39,7 @@ class Field;
 #include "bout/deprecated.hxx"
 
 #include "bout/dataiterator.hxx"
+#include "bout/singledataiterator.hxx"
 
 #include "unused.hxx"
 
@@ -64,8 +65,11 @@ class Field {
   virtual void setYStencil(stencil &fval, const bindex &bx, CELL_LOC loc = CELL_DEFAULT) const = 0;
   virtual void setZStencil(stencil &fval, const bindex &bx, CELL_LOC loc = CELL_DEFAULT) const = 0;
 
+  virtual void setZStencil(stencil &fval, const SingleDataIterator &i, CELL_LOC loc = CELL_DEFAULT) const = 0;
+
   // Data access
   virtual const BoutReal& operator[](const Indices &i) const = 0;
+  virtual const BoutReal& operator()(const SingleDataIterator &i) const = 0;
 
   virtual void setLocation(CELL_LOC loc) {
     if (loc != CELL_CENTRE)

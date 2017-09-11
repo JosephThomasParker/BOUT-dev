@@ -1235,6 +1235,7 @@ const Field3D Mesh::applyXdiff(const Field3D &var, Mesh::deriv_func func, Mesh::
 // Y derivative
 
 const Field2D Mesh::applyYdiff(const Field2D &var, Mesh::deriv_func func, Mesh::inner_boundary_deriv_func func_in, Mesh::outer_boundary_deriv_func func_out, CELL_LOC loc) {
+  SCOREP0()
   TRACE("mesh::applyYdiff( Field2D )");
   if (var.getNy() == 1) {
     return 0.;
@@ -1342,7 +1343,7 @@ const Field2D Mesh::applyYdiff(const Field2D &var, Mesh::deriv_func func, Mesh::
 }
 
 const Field3D Mesh::applyYdiff(const Field3D &var, Mesh::deriv_func func, Mesh::inner_boundary_deriv_func func_in, Mesh::outer_boundary_deriv_func func_out, CELL_LOC loc) {
-SCOREP0()
+  SCOREP0()
   TRACE("mesh::applyYdiff( Field3D )");
   //output<<"mesh::applyYdiff( Field3D )";
   if (var.getNy() == 1){
@@ -1537,37 +1538,16 @@ SCOREP0()
         // More than one guard cell, so set pp and mm values
         // This allows higher-order methods to be used
         TRACE("mesh::applyYdiff, >1 guard");
-        output<<"mesh::applyYdiff, >1 guard";
-///        for(const auto &i : result.region(RGN_NOBNDRY)) {
-///          // Set stencils
-///          stencil s;
-///          s.c = var_fa[i];
-///          s.p = var_fa[i.yp()];
-///          s.m = var_fa[i.ym()];
-///          s.pp = var_fa[i.offset(0,2,0)];
-///          s.mm = var_fa[i.offset(0,-2,0)];
-///          result[i] = func(s);
 #pragma omp parallel
 	{
         for(SingleDataIterator i = result.sdi_region(RGN_NOBNDRY); !i.done(); ++i){
-          //output<<omp_get_thread_num()<<" count "<<i.icount<<" rgn "<<i.rgn[i.icount]<<"\n";
           // Set stencils
           stencil s;
-          //output<<"s.c\n";
-          TRACE("sc");
           s.c = var_fa(i);
-          //output<<"s.p\n";
-          TRACE("sp");
           s.p = var_fa(i.yp());
-          //output<<"s.m\n";
-          TRACE("sm");
           s.m = var_fa(i.ym());
-          //output<<"s.pp\n";
-          TRACE("spp");
-          s.pp = var_fa(i.offset(0,2,0));
-          //output<<"s.mm\n";
-          TRACE("smm");
-          s.mm = var_fa(i.offset(0,-2,0));
+          s.pp = var_fa(i.ypp());
+          s.mm = var_fa(i.ymm());
           
           result(i) = func(s);
 	}
@@ -1576,14 +1556,6 @@ SCOREP0()
         // Only one guard cell, so no pp or mm values
         TRACE("mesh::applyYdiff, only 1 guard");
         output<<"mesh::applyYdiff, only 1 guard";
-///        for(const auto &i : result.region(RGN_NOBNDRY)) {
-///          // Set stencils
-///          stencil s;
-///          s.c = var_fa[i];
-///          s.p = var_fa[i.yp()];
-///          s.m = var_fa[i.ym()];
-///          s.pp = nan("");
-///          s.mm = nan("");
 #pragma omp parallel
 	{
         for(SingleDataIterator i = result.sdi_region(RGN_NOBNDRY); !i.done(); ++i){
@@ -1680,6 +1652,7 @@ SCOREP0()
 // Z derivative
 
 const Field3D Mesh::applyZdiff(const Field3D &var, Mesh::deriv_func func, CELL_LOC loc) {
+  SCOREP0()
   Field3D result;
   result.allocate(); // Make sure data allocated
   
@@ -1764,6 +1737,7 @@ const Field3D Mesh::applyZdiff(const Field3D &var, Mesh::deriv_func func, CELL_L
 ////////////// X DERIVATIVE /////////////////
 
 const Field3D Mesh::indexDDX(const Field3D &f, CELL_LOC outloc, DIFF_METHOD method) {
+  SCOREP0()
   Mesh::deriv_func func = fDDX; // Set to default function
   Mesh::inner_boundary_deriv_func func_in = fDDX_in;
   Mesh::outer_boundary_deriv_func func_out = fDDX_out;
@@ -1834,6 +1808,7 @@ const Field2D Mesh::indexDDX(const Field2D &f) {
 ////////////// Y DERIVATIVE /////////////////
 
 const Field3D Mesh::indexDDY(const Field3D &f, CELL_LOC outloc, DIFF_METHOD method) {
+  SCOREP0()
   TRACE("index_derivs::indexDDY( Field3D )");
   Mesh::deriv_func func = fDDY; // Set to default function
   Mesh::inner_boundary_deriv_func func_in = fDDY_in;
@@ -2466,6 +2441,7 @@ const Field3D Mesh::indexD4DZ4(const Field3D &f) {
 
 /// Special case where both arguments are 2D. Output location ignored for now
 const Field2D Mesh::indexVDDX(const Field2D &v, const Field2D &f, CELL_LOC UNUSED(outloc), DIFF_METHOD method) {
+  SCOREP0()
   Mesh::upwind_func func = fVDDX;
 
   if(method != DIFF_DEFAULT) {
@@ -2484,6 +2460,15 @@ const Field2D Mesh::indexVDDX(const Field2D &v, const Field2D &f, CELL_LOC UNUSE
     
     result(bx.jx,bx.jy) = func(v[{bx.jx,bx.jy,0}], fs);
   }while(next_index2(&bx));
+///#pragma omp parallel
+///{
+///    for(SingleDataIterator i = result.sdi_region(RGN_NOBNDRY); !i.done(); ++i){
+///      // Set stencils
+///      stencil vs, fs;
+///      f.setXStencil(fs, i);
+///      result(i) = func(v(i), fs);
+///    }
+///}
 
 #ifdef CHECK
   // Mark boundaries as invalid
@@ -2495,6 +2480,7 @@ const Field2D Mesh::indexVDDX(const Field2D &v, const Field2D &f, CELL_LOC UNUSE
 
 /// General version for 2 or 3-D objects
 const Field3D Mesh::indexVDDX(const Field &v, const Field &f, CELL_LOC outloc, DIFF_METHOD method) {
+  SCOREP0()
   TRACE("Mesh::indexVDDX(Field, Field)");
   
   Field3D result;
@@ -2582,6 +2568,7 @@ const Field3D Mesh::indexVDDX(const Field &v, const Field &f, CELL_LOC outloc, D
 
 // special case where both are 2D
 const Field2D Mesh::indexVDDY(const Field2D &v, const Field2D &f, CELL_LOC outloc, DIFF_METHOD method) {
+  SCOREP0()
   TRACE("Mesh::indexVDDY");
   
   Field2D result;
@@ -2665,6 +2652,7 @@ const Field2D Mesh::indexVDDY(const Field2D &v, const Field2D &f, CELL_LOC outlo
 
 // general case
 const Field3D Mesh::indexVDDY(const Field &v, const Field &f, CELL_LOC outloc, DIFF_METHOD method) {
+  SCOREP0()
   TRACE("Mesh::indexVDDY(Field, Field)");
   
   Field3D result;
@@ -2753,6 +2741,7 @@ const Field3D Mesh::indexVDDY(const Field &v, const Field &f, CELL_LOC outloc, D
 
 // general case
 const Field3D Mesh::indexVDDZ(const Field &v, const Field &f, CELL_LOC outloc, DIFF_METHOD method) {
+  SCOREP0()
   TRACE("Mesh::indexVDDZ");
   
   Field3D result;
@@ -2798,15 +2787,25 @@ const Field3D Mesh::indexVDDZ(const Field &v, const Field &f, CELL_LOC outloc, D
       func = lookupFluxFunc(table, method);
     }
 
-    bindex bx;
-    start_index(&bx);
-    stencil vval, fval;
-    do {
-      v.setZStencil(vval, bx, diffloc);
-      f.setZStencil(fval, bx);
-      
-      result(bx.jx, bx.jy, bx.jz) = func(vval, fval);
-    }while(next_index3(&bx));
+///    bindex bx;
+///    start_index(&bx);
+///    stencil vval, fval;
+///    do {
+///      v.setZStencil(vval, bx, diffloc);
+///      f.setZStencil(fval, bx);
+///      
+///      result(bx.jx, bx.jy, bx.jz) = func(vval, fval);
+///    }while(next_index3(&bx));
+#pragma omp parallel
+{
+      for(SingleDataIterator i = result.sdi_region(RGN_NOBNDRY); !i.done(); ++i){
+        // Set stencils
+        stencil vval, fval;
+        v.setZStencil(vval, i, diffloc);
+        f.setZStencil(fval, i);
+        result(i) = func(vval, fval);
+      }
+}
     
   }else {
     Mesh::upwind_func func = fVDDZ;
@@ -2817,13 +2816,23 @@ const Field3D Mesh::indexVDDZ(const Field &v, const Field &f, CELL_LOC outloc, D
       func = lookupUpwindFunc(table, method);
     }
     
-    bindex bx;
-    start_index(&bx);
-    stencil vval, fval;
-    do {
-      f.setZStencil(fval, bx);
-      result(bx.jx, bx.jy, bx.jz) = func(v[{bx.jx, bx.jy, bx.jz}], fval);
-    }while(next_index3(&bx));
+///    bindex bx;
+///    start_index(&bx);
+///    stencil vval, fval;
+///    do {
+///      f.setZStencil(fval, bx);
+///      result(bx.jx, bx.jy, bx.jz) = func(v[{bx.jx, bx.jy, bx.jz}], fval);
+///    }while(next_index3(&bx));
+
+#pragma omp parallel
+{
+    for(SingleDataIterator i = result.sdi_region(RGN_NOBNDRY); !i.done(); ++i){
+      // Set stencils
+      stencil vval, fval;
+      f.setZStencil(fval, i);
+      result(i) = func(v(i), fval);
+    }
+}
   }
   
   result.setLocation(inloc);
@@ -2841,6 +2850,7 @@ const Field3D Mesh::indexVDDZ(const Field &v, const Field &f, CELL_LOC outloc, D
  *******************************************************************************/
 
 const Field2D Mesh::indexFDDX(const Field2D &v, const Field2D &f, CELL_LOC outloc, DIFF_METHOD method) {
+  SCOREP0()
   TRACE("Mesh::::indexFDDX(Field2D, Field2D)");
   
   if( (method == DIFF_SPLIT) || ((method == DIFF_DEFAULT) && (fFDDX == NULL)) ) {
@@ -2876,6 +2886,7 @@ const Field2D Mesh::indexFDDX(const Field2D &v, const Field2D &f, CELL_LOC outlo
 }
 
 const Field3D Mesh::indexFDDX(const Field3D &v, const Field3D &f, CELL_LOC outloc, DIFF_METHOD method) {
+  SCOREP0()
   TRACE("Mesh::indexFDDX");
   
   if( (method == DIFF_SPLIT) || ((method == DIFF_DEFAULT) && (fFDDX == NULL)) ) {
@@ -2951,6 +2962,7 @@ const Field3D Mesh::indexFDDX(const Field3D &v, const Field3D &f, CELL_LOC outlo
 /////////////////////////////////////////////////////////////////////////
 
 const Field2D Mesh::indexFDDY(const Field2D &v, const Field2D &f, CELL_LOC outloc, DIFF_METHOD method) {
+  SCOREP0()
   TRACE("Mesh::indexFDDY(Field2D, Field2D)");
   
   if( (method == DIFF_SPLIT) || ((method == DIFF_DEFAULT) && (fFDDY == NULL)) ) {
@@ -2986,6 +2998,7 @@ const Field2D Mesh::indexFDDY(const Field2D &v, const Field2D &f, CELL_LOC outlo
 }
 
 const Field3D Mesh::indexFDDY(const Field3D &v, const Field3D &f, CELL_LOC outloc, DIFF_METHOD method) {
+  SCOREP0()
   TRACE("Mesh::indexFDDY");
   
   if( (method == DIFF_SPLIT) || ((method == DIFF_DEFAULT) && (fFDDY == NULL)) ) {
@@ -3066,6 +3079,7 @@ const Field3D Mesh::indexFDDY(const Field3D &v, const Field3D &f, CELL_LOC outlo
 /////////////////////////////////////////////////////////////////////////
 
 const Field3D Mesh::indexFDDZ(const Field3D &v, const Field3D &f, CELL_LOC outloc, DIFF_METHOD method) {
+  SCOREP0()
   TRACE("Mesh::indexFDDZ(Field3D, Field3D)");
   if( (method == DIFF_SPLIT) || ((method == DIFF_DEFAULT) && (fFDDZ == NULL)) ) {
     // Split into an upwind and a central differencing part
