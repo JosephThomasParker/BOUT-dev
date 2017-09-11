@@ -206,16 +206,17 @@ public:
    * Add an offset to the index for general stencils
    */
   const SIndices offset(int dx, int dy, int dz) const {
+    int z0=rgn[icount]%nz;
     if (dz>0){
-      int zp=rgn[icount]%nz;
+      int zp = z0;
       for (int j=0;j<dz;++j)
         zp=(zp == nz-1 ? 0 : zp+1);
-      return { rgn[icount] + ny*nz*dx + nz*dy + zp , nx, ny, nz };
+      return { rgn[icount] + ny*nz*dx + nz*dy + zp - z0, nx, ny, nz };
     } else {
-      int zm=rgn[icount]%nz;
+      int zm=z0;
       for (;dz!= 0;++dz)
         zm = (zm == 0 ? nz-1 : zm-1);
-      return { rgn[icount] + ny*nz*dx + nz*dy + zm , nx, ny, nz};
+      return { rgn[icount] + ny*nz*dx + nz*dy + zm - z0 , nx, ny, nz};
     }
   }
   
