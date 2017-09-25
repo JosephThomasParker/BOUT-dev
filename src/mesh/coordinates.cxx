@@ -16,6 +16,7 @@
 #include <fft.hxx>
 
 #include <globals.hxx>
+#include <bout/scorepwrapper.hxx>
 
 Coordinates::Coordinates(Mesh *mesh) {
   
@@ -572,6 +573,7 @@ const Field2D Coordinates::DDX(const Field2D &f) {
 }
 
 const Field2D Coordinates::DDY(const Field2D &f) {
+  SCOREP0()
   return mesh->indexDDY(f) / dy;
 }
 
@@ -585,12 +587,14 @@ const Field2D Coordinates::DDZ(const Field2D &UNUSED(f)) {
 // Parallel gradient
 
 const Field2D Coordinates::Grad_par(const Field2D &var, CELL_LOC UNUSED(outloc), DIFF_METHOD UNUSED(method)) {
+  SCOREP0()
   TRACE("Coordinates::Grad_par( Field2D )");
   
   return DDY(var)/sqrt(g_22);
 }
 
 const Field3D Coordinates::Grad_par(const Field3D &var, CELL_LOC outloc, DIFF_METHOD method) {
+  SCOREP0()
   TRACE("Coordinates::Grad_par( Field3D )");
   
   return ::DDY(var, outloc, method)/sqrt(g_22);
@@ -613,11 +617,13 @@ const Field3D Coordinates::Vpar_Grad_par(const Field &v, const Field &f, CELL_LO
 // Parallel divergence
 
 const Field2D Coordinates::Div_par(const Field2D &f, CELL_LOC UNUSED(outloc), DIFF_METHOD UNUSED(method)) {
+  SCOREP0()
   TRACE("Coordinates::Div_par( Field2D )");
   return Bxy*Grad_par(f/Bxy);
 }
 
 const Field3D Coordinates::Div_par(const Field3D &f, CELL_LOC outloc, DIFF_METHOD method) {
+  SCOREP0()
   TRACE("Coordinates::Div_par( Field3D )");
   
   if(f.hasYupYdown() ) {

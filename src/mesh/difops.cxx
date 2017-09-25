@@ -48,18 +48,22 @@
 *******************************************************************************/
 
 const Field2D Grad_par(const Field2D &var, CELL_LOC outloc, DIFF_METHOD method) {
+  SCOREP0()
   return mesh->coordinates()->Grad_par(var, outloc, method);
 }
 
 const Field2D Grad_par(const Field2D &var, DIFF_METHOD method, CELL_LOC outloc) {
+  SCOREP0()
   return mesh->coordinates()->Grad_par(var, outloc, method);
 }
 
 const Field3D Grad_par(const Field3D &var, CELL_LOC outloc, DIFF_METHOD method) {
+  SCOREP0()
   return mesh->coordinates()->Grad_par(var, outloc, method);
 }
 
 const Field3D Grad_par(const Field3D &var, DIFF_METHOD method, CELL_LOC outloc) {
+  SCOREP0()
   return mesh->coordinates()->Grad_par(var, outloc, method);
 }
 
@@ -179,14 +183,17 @@ const Field3D Vpar_Grad_par(const Field &v, const Field &f, DIFF_METHOD method, 
 *******************************************************************************/
 
 const Field2D Div_par(const Field2D &f) {
+  SCOREP0()
   return mesh->coordinates()->Div_par(f);
 }
 
 const Field3D Div_par(const Field3D &f, CELL_LOC outloc, DIFF_METHOD method) {
+  SCOREP0()
   return mesh->coordinates()->Div_par(f, outloc, method);
 }
 
 const Field3D Div_par(const Field3D &f, DIFF_METHOD method, CELL_LOC outloc) {
+  SCOREP0()
   return mesh->coordinates()->Div_par(f, outloc, method);
 }
 
@@ -194,6 +201,7 @@ const Field3D Div_par(const Field3D &f, const Field3D &v) {
   // Parallel divergence, using velocities at cell boundaries
   // Note: Not guaranteed to be flux conservative
 
+  SCOREP0()
   Field3D result;
   result.allocate();
 
@@ -225,11 +233,13 @@ const Field3D Div_par(const Field3D &f, const Field3D &v) {
 //////// Flux methods
 
 const Field3D Div_par_flux(const Field3D &v, const Field3D &f, CELL_LOC outloc, DIFF_METHOD method) {
+  SCOREP0()
   Coordinates *metric = mesh->coordinates();
   return -metric->Bxy*FDDY(v, f/metric->Bxy, outloc, method)/sqrt(metric->g_22);
 }
 
 const Field3D Div_par_flux(const Field3D &v, const Field3D &f, DIFF_METHOD method, CELL_LOC outloc) {
+  SCOREP0()
   return Div_par_flux(v,f, outloc, method);
 }
 

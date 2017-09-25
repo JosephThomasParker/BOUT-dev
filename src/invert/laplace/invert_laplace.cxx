@@ -42,6 +42,7 @@
 #include <output.hxx>
 #include <msg_stack.hxx>
 #include <bout/constants.hxx>
+#include <bout/scorepwrapper.hxx>
 
 #include "laplacefactory.hxx"
 
@@ -124,6 +125,7 @@ void Laplacian::cleanup() {
  **********************************************************************************/
 
 const Field3D Laplacian::solve(const Field3D &b) {
+  SCOREP0()
   Timer timer("invert");
 #ifdef CHECK
   msg_stack.push("Laplacian::solve(Field3D)");
@@ -336,6 +338,7 @@ void Laplacian::tridagMatrix(dcomplex **avec, dcomplex **bvec, dcomplex **cvec,
                              dcomplex **bk, int jy, int global_flags, int inner_boundary_flags, int outer_boundary_flags,
                              const Field2D *a, const Field2D *ccoef,
                              const Field2D *d) {
+  SCOREP0()
 
   Coordinates *coord = mesh->coordinates();
 
@@ -394,6 +397,7 @@ void Laplacian::tridagMatrix(dcomplex *avec, dcomplex *bvec, dcomplex *cvec,
                              const Field2D *a, const Field2D *ccoef,
                              const Field2D *d,
                              bool includeguards) {
+  SCOREP0()
   int xs = 0;            // xstart set to the start of x on this processor (including ghost points)
   int xe = mesh->LocalNx-1;  // xend set to the end of x on this processor (including ghost points)
 
@@ -717,11 +721,13 @@ void Laplacian::tridagMatrix(dcomplex *avec, dcomplex *bvec, dcomplex *cvec,
 /// Returns the coefficients for a tridiagonal matrix for laplace. Used by Delp2 too
 void laplace_tridag_coefs(int jx, int jy, int jz, dcomplex &a, dcomplex &b, dcomplex &c,
                           const Field2D *ccoef, const Field2D *d) {
+  SCOREP0()
   Laplacian::defaultInstance()->tridagCoefs(jx,jy, jz, a, b, c, ccoef, d);
 }
 
 int invert_laplace(const FieldPerp &b, FieldPerp &x, int flags, const Field2D *a, const Field2D *c, const Field2D *d) {
 
+  SCOREP0()
   Laplacian *lap = Laplacian::defaultInstance();
 
   if(a != NULL) {

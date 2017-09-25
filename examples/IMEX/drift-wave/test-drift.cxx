@@ -28,7 +28,7 @@ protected:
   }
   
   int convective(BoutReal time) {
-SCOREP0()
+    SCOREP0()
     // Non-stiff parts of the problem here
     // Here just the nonlinear advection
     
@@ -51,7 +51,7 @@ SCOREP0()
   }
   
   int diffusive(BoutReal time) {
-SCOREP0()
+    SCOREP0()
     // Parallel dynamics treated implicitly
     
     // Solve for potential

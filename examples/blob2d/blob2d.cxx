@@ -9,6 +9,7 @@
 #include <bout/physicsmodel.hxx>   // Commonly used BOUT++ components
 #include <derivs.hxx>              // To use DDZ()
 #include <invert_laplace.hxx>      // Laplacian inversion
+#include <bout/scorepwrapper.hxx>  // Provides Scalasca instrumentation macros
 
 /// 2D drift-reduced model, mainly used for blob studies
 ///
@@ -47,6 +48,7 @@ private:
 
 protected:
   int init(bool restarting) {
+    SCOREP0()
 
     /******************Reading options *****************/
 
@@ -106,6 +108,7 @@ protected:
   }
 
   int rhs(BoutReal t) {
+    SCOREP0()
 
     // Run communications
     ////////////////////////////////////////////////////////////////////////////

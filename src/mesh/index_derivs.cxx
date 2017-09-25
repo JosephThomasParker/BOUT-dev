@@ -1877,6 +1877,7 @@ const Field3D Mesh::indexDDY(const Field3D &f, CELL_LOC outloc, DIFF_METHOD meth
 }
 
 const Field2D Mesh::indexDDY(const Field2D &f) {
+  SCOREP0()
   return applyYdiff(f, fDDY, fDDY_in, fDDY_out);
 }
 
