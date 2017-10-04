@@ -2707,12 +2707,9 @@ const std::vector<int> BoutMesh::make_single_index_region(int xstart, int xend,
   int x = xstart;
   int y = ystart;
   int z = zstart;
-///  int nx = LocalNx;
-///  int ny = LocalNy;
-///  int nz = LocalNz;
-  int nx = GlobalNx;
-  int ny = GlobalNy;
-  int nz = GlobalNz;
+  int nx = LocalNx;
+  int ny = LocalNy;
+  int nz = LocalNz;
 
   bool done = false;
   j=-1;
