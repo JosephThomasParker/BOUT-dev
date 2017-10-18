@@ -21,7 +21,7 @@ protected:
     Field3D b = 2.0;
     Field3D c = 3.0;
 
-    Field3D result1, result2, result3, result4;
+    Field3D result1, result2, result3, result4, result5;
 
     // Using Field methods (classic operator overloading)
     
@@ -58,12 +58,20 @@ protected:
     for(auto i : result4)
       result4[i] = 2.*a[i] + b[i] * c[i];
     Duration elapsed4 = steady_clock::now() - start4;
+
+    // SingleDataIterator
+    result5.allocate();
+    SteadyClock start5 = steady_clock::now();
+    for(SingleDataIterator i = result5.sdi_region(RGN_ALL); !i.done(); ++i)
+      result5(i) = 2.*a(i) + b(i) * c(i);
+    Duration elapsed5 = steady_clock::now() - start5;
     
     output << "TIMING\n======\n";
     output << "Fields: " << elapsed1.count() << endl;
     output << "C loop: " << elapsed2.count() << endl;
     output << "Templates: " << elapsed3.count() << endl;
     output << "Range For: " << elapsed4.count() << endl;
+    output << "SingleDataIterator For: " << elapsed5.count() << endl;
     
     return 1;
   }
