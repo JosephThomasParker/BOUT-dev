@@ -47,7 +47,7 @@ LaplaceSerialTri::LaplaceSerialTri(Options *opt) : Laplacian(opt), A(0.0), C(1.0
   int ncz = mesh->LocalNz;
 
   bk = matrix<dcomplex>(mesh->LocalNx, ncz/2 + 1);
-  bk1d = new dcomplex[mesh->LocalNx];
+  //bk1d = new dcomplex[mesh->LocalNx];
 
   //Initialise bk to 0 as we only visit 0<= kz <= maxmode in solve
   for(int kz=maxmode+1; kz < ncz/2 + 1; kz++){
@@ -57,7 +57,7 @@ LaplaceSerialTri::LaplaceSerialTri(Options *opt) : Laplacian(opt), A(0.0), C(1.0
   }
 
   xk = matrix<dcomplex>(mesh->LocalNx, ncz/2 + 1);
-  xk1d = new dcomplex[mesh->LocalNx];
+  //xk1d = new dcomplex[mesh->LocalNx];
 
   //Initialise xk to 0 as we only visit 0<= kz <= maxmode in solve
   for(int kz=maxmode+1; kz < ncz/2 + 1; kz++){
@@ -66,20 +66,20 @@ LaplaceSerialTri::LaplaceSerialTri(Options *opt) : Laplacian(opt), A(0.0), C(1.0
     }
   }
 
-  avec = new dcomplex[mesh->LocalNx];
-  bvec = new dcomplex[mesh->LocalNx];
-  cvec = new dcomplex[mesh->LocalNx];
+  //avec = new dcomplex[mesh->LocalNx];
+  //bvec = new dcomplex[mesh->LocalNx];
+  //cvec = new dcomplex[mesh->LocalNx];
 }
 
 LaplaceSerialTri::~LaplaceSerialTri() {
   free_matrix(bk);
-  delete[] bk1d;
+  //delete[] bk1d;
   free_matrix(xk);
-  delete[] xk1d;
+  //delete[] xk1d;
 
-  delete[] avec;
-  delete[] bvec;
-  delete[] cvec;
+  //delete[] avec;
+  //delete[] bvec;
+  //delete[] cvec;
 }
 
 const FieldPerp LaplaceSerialTri::solve(const FieldPerp &b) {
@@ -157,12 +157,28 @@ const FieldPerp LaplaceSerialTri::solve(const FieldPerp &b, const FieldPerp &x0)
    * Note that only the non-degenerate fourier modes are being used (i.e. the
    * offset and all the modes up to the Nyquist frequency)
    */
+
+#pragma omp parallel
+{
+  dcomplex* bk1d;
+  dcomplex* avec;
+  dcomplex* bvec;
+  dcomplex* cvec;
+  dcomplex* xk1d;
+  bk1d = new dcomplex[ncx+1];
+  avec = new dcomplex[ncx+1];
+  bvec = new dcomplex[ncx+1];
+  cvec = new dcomplex[ncx+1];
+  xk1d = new dcomplex[ncx+1];
+
+#pragma omp for
   for(int kz=0;kz<=maxmode;kz++) {
 
     // set bk1d
-    for(int ix=0;ix<=ncx;ix++)
+    for(int ix=0;ix<=ncx;ix++) {
       // Get bk of the current fourier mode
       bk1d[ix] = bk[ix][kz];
+    }
 
     /* Set the matrix A used in the inversion of Ax=b
      * by calling tridagCoef and setting the BC
@@ -189,7 +205,6 @@ const FieldPerp LaplaceSerialTri::solve(const FieldPerp &b, const FieldPerp &x0)
     if(!mesh->periodicX) {
       // Call tridiagonal solver
       tridag(avec, bvec, cvec, bk1d, xk1d, mesh->LocalNx);
-
     } else {
       // Periodic in X, so cyclic tridiagonal
       cyclic_tridag(avec+2, bvec+2, cvec+2, bk1d+2, xk1d+2, mesh->LocalNx-4);
@@ -216,7 +231,14 @@ const FieldPerp LaplaceSerialTri::solve(const FieldPerp &b, const FieldPerp &x0)
       xk[ix][kz]=xk1d[ix];
     }
   }
+  delete[]  bk1d;
+  delete[]  avec;
+  delete[]  bvec;
+  delete[]  cvec;
+  delete[]  xk1d;
+}
 
+#pragma omp parallel for
   // Done inversion, transform back
   for(int ix=0; ix<=ncx; ix++){
 
