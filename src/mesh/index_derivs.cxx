@@ -60,6 +60,7 @@
 #include <output.hxx>
 
 #include <bout/mesh.hxx>
+#include <bout/scorepwrapper.hxx>
 
 /*******************************************************************************
  * Limiters
@@ -915,6 +916,7 @@ const Field3D Mesh::applyXdiff(const Field3D &var, Mesh::deriv_func func, CELL_L
 // Y derivative
 
 const Field2D Mesh::applyYdiff(const Field2D &var, Mesh::deriv_func func, CELL_LOC loc, REGION region) {
+  SCOREP0()
   if (var.getNy() == 1) {
     return 0.;
   }
@@ -966,6 +968,7 @@ const Field2D Mesh::applyYdiff(const Field2D &var, Mesh::deriv_func func, CELL_L
 }
 
 const Field3D Mesh::applyYdiff(const Field3D &var, Mesh::deriv_func func, CELL_LOC loc, REGION region) {
+  SCOREP0()
   if (var.getNy() == 1){
     return 0.;
   }
@@ -990,14 +993,37 @@ const Field3D Mesh::applyYdiff(const Field3D &var, Mesh::deriv_func func, CELL_L
       // Cell location of the input field
       CELL_LOC location = var.getLocation();
       
-      for(const auto &i : result.region(region)) {
+///      for(const auto &i : result.region(region)) {
+///        // Set stencils
+///        stencil s;
+///        s.c = var[i];
+///        s.p = var.yup()[i.yp()];
+///        s.m = var.ydown()[i.ym()];
+///        s.pp = nan("");
+///        s.mm = nan("");
+///        
+///        if ((location == CELL_CENTRE) && (loc == CELL_YLOW)) {
+///          // Producing a stencil centred around a lower Y value
+///          s.pp = s.p;
+///          s.p  = s.c;
+///        } else if(location == CELL_YLOW) {
+///          // Stencil centred around a cell centre
+///          s.mm = s.m;
+///          s.m  = s.c;
+///        }
+///
+///        result[i] = func(s);
+///      }
+#pragma omp parallel
+{
+      stencil s;
+      s.pp = nan("");
+      s.mm = nan("");
+      for(SingleDataIterator i = result.sdi_region(region); !i.done(); ++i){
         // Set stencils
-        stencil s;
-        s.c = var[i];
-        s.p = var.yup()[i.yp()];
-        s.m = var.ydown()[i.ym()];
-        s.pp = nan("");
-        s.mm = nan("");
+        s.c = var(i);
+        s.p = var.yup()(i.yp());
+        s.m = var.ydown()(i.ym());
         
         if ((location == CELL_CENTRE) && (loc == CELL_YLOW)) {
           // Producing a stencil centred around a lower Y value
@@ -1009,21 +1035,36 @@ const Field3D Mesh::applyYdiff(const Field3D &var, Mesh::deriv_func func, CELL_L
           s.m  = s.c;
         }
 
-        result[i] = func(s);
+        result(i) = func(s);
       }
+}
     } else {
       // Non-staggered
-      for(const auto &i : result.region(region)) {
+///      for(const auto &i : result.region(region)) {
+///        // Set stencils
+///        stencil s;
+///        s.c = var[i];
+///        s.p = var.yup()[i.yp()];
+///        s.m = var.ydown()[i.ym()];
+///        s.pp = nan("");
+///        s.mm = nan("");
+///        
+///        result[i] = func(s);
+///      }
+#pragma omp parallel
+{
+      stencil s;
+      s.pp = nan("");
+      s.mm = nan("");
+      for(SingleDataIterator i = result.sdi_region(region); !i.done(); ++i){
         // Set stencils
-        stencil s;
-        s.c = var[i];
-        s.p = var.yup()[i.yp()];
-        s.m = var.ydown()[i.ym()];
-        s.pp = nan("");
-        s.mm = nan("");
+        s.c = var(i);
+        s.p = var.yup()(i.yp());
+        s.m = var.ydown()(i.ym());
         
-        result[i] = func(s);
+        result(i) = func(s);
       }
+}
     }
   } else {
     // var has no yup/ydown fields, so we need to shift into field-aligned coordinates
@@ -1039,14 +1080,37 @@ const Field3D Mesh::applyYdiff(const Field3D &var, Mesh::deriv_func func, CELL_L
       if (mesh->ystart > 1) {
         // More than one guard cell, so set pp and mm values
         // This allows higher-order methods to be used
-        for(const auto &i : result.region(region)) {
+///        for(const auto &i : result.region(region)) {
+///          // Set stencils
+///          stencil s;
+///          s.c = var_fa[i];
+///          s.p = var_fa[i.yp()];
+///          s.m = var_fa[i.ym()];
+///          s.pp = var_fa[i.offset(0,2,0)];
+///          s.mm = var_fa[i.offset(0,-2,0)];
+///          
+///          if ((location == CELL_CENTRE) && (loc == CELL_YLOW)) {
+///            // Producing a stencil centred around a lower Y value
+///            s.pp = s.p;
+///            s.p  = s.c;
+///          } else if(location == CELL_YLOW) {
+///            // Stencil centred around a cell centre
+///            s.mm = s.m;
+///            s.m  = s.c;
+///          }
+///          
+///          result[i] = func(s);
+///        }
+#pragma omp parallel
+	{
+        stencil s;
+        for(SingleDataIterator i = result.sdi_region(region); !i.done(); ++i){
           // Set stencils
-          stencil s;
-          s.c = var_fa[i];
-          s.p = var_fa[i.yp()];
-          s.m = var_fa[i.ym()];
-          s.pp = var_fa[i.offset(0,2,0)];
-          s.mm = var_fa[i.offset(0,-2,0)];
+          s.c = var_fa(i);
+          s.p = var_fa(i.yp());
+          s.m = var_fa(i.ym());
+          s.pp = var_fa(i.offset(0,2,0));
+          s.mm = var_fa(i.offset(0,-2,0));
           
           if ((location == CELL_CENTRE) && (loc == CELL_YLOW)) {
             // Producing a stencil centred around a lower Y value
@@ -1058,18 +1122,42 @@ const Field3D Mesh::applyYdiff(const Field3D &var, Mesh::deriv_func func, CELL_L
             s.m  = s.c;
           }
           
-          result[i] = func(s);
+          result(i) = func(s);
         }
+	}
       } else {
         // Only one guard cell, so no pp or mm values
-        for(const auto &i : result.region(region)) {
+///        for(const auto &i : result.region(region)) {
+///          // Set stencils
+///          stencil s;
+///          s.c = var_fa[i];
+///          s.p = var_fa[i.yp()];
+///          s.m = var_fa[i.ym()];
+///          s.pp = nan("");
+///          s.mm = nan("");
+///          
+///          if ((location == CELL_CENTRE) && (loc == CELL_YLOW)) {
+///            // Producing a stencil centred around a lower Y value
+///            s.pp = s.p;
+///            s.p  = s.c;
+///          } else if(location == CELL_YLOW) {
+///            // Stencil centred around a cell centre
+///            s.mm = s.m;
+///            s.m  = s.c;
+///          }
+///          
+///          result[i] = func(s);
+///        }
+#pragma omp parallel
+	{
+        stencil s;
+	s.pp = nan("");
+	s.mm = nan("");
+        for(SingleDataIterator i = result.sdi_region(region); !i.done(); ++i){
           // Set stencils
-          stencil s;
-          s.c = var_fa[i];
-          s.p = var_fa[i.yp()];
-          s.m = var_fa[i.ym()];
-          s.pp = nan("");
-          s.mm = nan("");
+          s.c = var_fa(i);
+          s.p = var_fa(i.yp());
+          s.m = var_fa(i.ym());
           
           if ((location == CELL_CENTRE) && (loc == CELL_YLOW)) {
             // Producing a stencil centred around a lower Y value
@@ -1081,8 +1169,9 @@ const Field3D Mesh::applyYdiff(const Field3D &var, Mesh::deriv_func func, CELL_L
             s.m  = s.c;
           }
           
-          result[i] = func(s);
+          result(i) = func(s);
         }
+	}
       }
       
     } else {
@@ -1091,29 +1180,57 @@ const Field3D Mesh::applyYdiff(const Field3D &var, Mesh::deriv_func func, CELL_L
       if (mesh->ystart > 1) {
         // More than one guard cell, so set pp and mm values
         // This allows higher-order methods to be used
-        for(const auto &i : result.region(region)) {
+///        for(const auto &i : result.region(region)) {
+///          // Set stencils
+///          stencil s;
+///          s.c = var_fa[i];
+///          s.p = var_fa[i.yp()];
+///          s.m = var_fa[i.ym()];
+///          s.pp = var_fa[i.offset(0,2,0)];
+///          s.mm = var_fa[i.offset(0,-2,0)];
+///          
+///          result[i] = func(s);
+///        }
+#pragma omp parallel
+	{
+        stencil s;
+        for(SingleDataIterator i = result.sdi_region(region); !i.done(); ++i){
           // Set stencils
-          stencil s;
-          s.c = var_fa[i];
-          s.p = var_fa[i.yp()];
-          s.m = var_fa[i.ym()];
-          s.pp = var_fa[i.offset(0,2,0)];
-          s.mm = var_fa[i.offset(0,-2,0)];
+          s.c = var_fa(i);
+          s.p = var_fa(i.yp());
+          s.m = var_fa(i.ym());
+          s.pp = var_fa(i.ypp());
+          s.mm = var_fa(i.ymm());
           
-          result[i] = func(s);
+          result(i) = func(s);
+	}
         }
       } else {
         // Only one guard cell, so no pp or mm values
-        for(const auto &i : result.region(region)) {
+///        for(const auto &i : result.region(region)) {
+///          // Set stencils
+///          stencil s;
+///          s.c = var_fa[i];
+///          s.p = var_fa[i.yp()];
+///          s.m = var_fa[i.ym()];
+///          s.pp = nan("");
+///          s.mm = nan("");
+///          
+///          result[i] = func(s);
+///        }
+#pragma omp parallel
+	{
+        stencil s;
+	s.pp = nan("");
+	s.mm = nan("");
+        for(SingleDataIterator i = result.sdi_region(RGN_NOBNDRY); !i.done(); ++i){
           // Set stencils
-          stencil s;
-          s.c = var_fa[i];
-          s.p = var_fa[i.yp()];
-          s.m = var_fa[i.ym()];
-          s.pp = nan("");
-          s.mm = nan("");
+          s.c = var_fa(i);
+          s.p = var_fa(i.yp());
+          s.m = var_fa(i.ym());
           
-          result[i] = func(s);
+          result(i) = func(s);
+	}
         }
       }
     }
@@ -1133,6 +1250,7 @@ const Field3D Mesh::applyYdiff(const Field3D &var, Mesh::deriv_func func, CELL_L
 // Z derivative
 
 const Field3D Mesh::applyZdiff(const Field3D &var, Mesh::deriv_func func, CELL_LOC loc, REGION region) {
+  SCOREP0()
   if (var.getNz()==1){
     return 0.;
   }
@@ -1171,6 +1289,7 @@ const Field3D Mesh::applyZdiff(const Field3D &var, Mesh::deriv_func func, CELL_L
 ////////////// X DERIVATIVE /////////////////
 
 const Field3D Mesh::indexDDX(const Field3D &f, CELL_LOC outloc, DIFF_METHOD method) {
+  SCOREP0()
   Mesh::deriv_func func = fDDX; // Set to default function
   DiffLookup *table = FirstDerivTable;
   
@@ -1235,6 +1354,7 @@ const Field2D Mesh::indexDDX(const Field2D &f) {
 ////////////// Y DERIVATIVE /////////////////
 
 const Field3D Mesh::indexDDY(const Field3D &f, CELL_LOC outloc, DIFF_METHOD method) {
+  SCOREP0()
   Mesh::deriv_func func = fDDY; // Set to default function
   DiffLookup *table = FirstDerivTable;
   
@@ -1291,6 +1411,7 @@ const Field3D Mesh::indexDDY(const Field3D &f, CELL_LOC outloc, DIFF_METHOD meth
 }
 
 const Field2D Mesh::indexDDY(const Field2D &f) {
+  SCOREP0()
   return applyYdiff(f, fDDY);
 }
 
@@ -1762,6 +1883,7 @@ const Field3D Mesh::indexD4DZ4(const Field3D &f) {
 
 /// Special case where both arguments are 2D. Output location ignored for now
 const Field2D Mesh::indexVDDX(const Field2D &v, const Field2D &f, CELL_LOC UNUSED(outloc), DIFF_METHOD method) {
+  SCOREP0()
   Mesh::upwind_func func = fVDDX;
 
   if(method != DIFF_DEFAULT) {
@@ -1795,6 +1917,7 @@ const Field2D Mesh::indexVDDX(const Field2D &v, const Field2D &f, CELL_LOC UNUSE
 
 /// General version for 2 or 3-D objects
 const Field3D Mesh::indexVDDX(const Field &v, const Field &f, CELL_LOC outloc, DIFF_METHOD method) {
+  SCOREP0()
   TRACE("Mesh::indexVDDX(Field, Field)");
 
   ASSERT1(this == v.getMesh());
@@ -1885,6 +2008,7 @@ const Field3D Mesh::indexVDDX(const Field &v, const Field &f, CELL_LOC outloc, D
 
 // special case where both are 2D
 const Field2D Mesh::indexVDDY(const Field2D &v, const Field2D &f, CELL_LOC outloc, DIFF_METHOD method) {
+  SCOREP0()
   TRACE("Mesh::indexVDDY");
 
   ASSERT1(this == v.getMesh());
@@ -1971,6 +2095,7 @@ const Field2D Mesh::indexVDDY(const Field2D &v, const Field2D &f, CELL_LOC outlo
 
 // general case
 const Field3D Mesh::indexVDDY(const Field &v, const Field &f, CELL_LOC outloc, DIFF_METHOD method) {
+  SCOREP0()
   TRACE("Mesh::indexVDDY(Field, Field)");
 
   ASSERT1(this == v.getMesh());
@@ -2062,6 +2187,7 @@ const Field3D Mesh::indexVDDY(const Field &v, const Field &f, CELL_LOC outloc, D
 
 // general case
 const Field3D Mesh::indexVDDZ(const Field &v, const Field &f, CELL_LOC outloc, DIFF_METHOD method) {
+  SCOREP0()
   TRACE("Mesh::indexVDDZ");
   
   ASSERT1(this == v.getMesh());
@@ -2153,6 +2279,7 @@ const Field3D Mesh::indexVDDZ(const Field &v, const Field &f, CELL_LOC outloc, D
  *******************************************************************************/
 
 const Field2D Mesh::indexFDDX(const Field2D &v, const Field2D &f, CELL_LOC outloc, DIFF_METHOD method) {
+  SCOREP0()
   TRACE("Mesh::::indexFDDX(Field2D, Field2D)");
   
   if( (method == DIFF_SPLIT) || ((method == DIFF_DEFAULT) && (fFDDX == NULL)) ) {
@@ -2192,6 +2319,7 @@ const Field2D Mesh::indexFDDX(const Field2D &v, const Field2D &f, CELL_LOC outlo
 }
 
 const Field3D Mesh::indexFDDX(const Field3D &v, const Field3D &f, CELL_LOC outloc, DIFF_METHOD method) {
+  SCOREP0()
   TRACE("Mesh::indexFDDX");
   
   if( (method == DIFF_SPLIT) || ((method == DIFF_DEFAULT) && (fFDDX == NULL)) ) {
@@ -2270,6 +2398,7 @@ const Field3D Mesh::indexFDDX(const Field3D &v, const Field3D &f, CELL_LOC outlo
 /////////////////////////////////////////////////////////////////////////
 
 const Field2D Mesh::indexFDDY(const Field2D &v, const Field2D &f, CELL_LOC outloc, DIFF_METHOD method) {
+  SCOREP0()
   TRACE("Mesh::indexFDDY(Field2D, Field2D)");
   
   if( (method == DIFF_SPLIT) || ((method == DIFF_DEFAULT) && (fFDDY == NULL)) ) {
@@ -2309,6 +2438,7 @@ const Field2D Mesh::indexFDDY(const Field2D &v, const Field2D &f, CELL_LOC outlo
 }
 
 const Field3D Mesh::indexFDDY(const Field3D &v, const Field3D &f, CELL_LOC outloc, DIFF_METHOD method) {
+  SCOREP0()
   TRACE("Mesh::indexFDDY");
   
   if( (method == DIFF_SPLIT) || ((method == DIFF_DEFAULT) && (fFDDY == NULL)) ) {
@@ -2392,6 +2522,7 @@ const Field3D Mesh::indexFDDY(const Field3D &v, const Field3D &f, CELL_LOC outlo
 /////////////////////////////////////////////////////////////////////////
 
 const Field3D Mesh::indexFDDZ(const Field3D &v, const Field3D &f, CELL_LOC outloc, DIFF_METHOD method) {
+  SCOREP0()
   TRACE("Mesh::indexFDDZ(Field3D, Field3D)");
   if( (method == DIFF_SPLIT) || ((method == DIFF_DEFAULT) && (fFDDZ == NULL)) ) {
     // Split into an upwind and a central differencing part

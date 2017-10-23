@@ -38,6 +38,7 @@ class Field3D; //#include "field3d.hxx"
 #include "stencils.hxx"
 
 #include "bout/dataiterator.hxx"
+#include "bout/singledataiterator.hxx"
 
 #include "bout/deprecated.hxx"
 
@@ -168,6 +169,15 @@ class Field2D : public Field, public FieldData {
     return operator()(i.x, i.y);
   }
 
+  BoutReal& operator()(const SIndices &i) {
+    //output << i.i << " " << i.nz << "\n";
+    return data[i.i/i.nz];
+  }
+  const BoutReal& operator()(const SIndices &i) const {
+    //output << i.i << " " << i.nz << "\n";
+    return data[i.i/i.nz];
+  }
+
   /*!
    * Access to the underlying data array. 
    * 
@@ -212,6 +222,52 @@ class Field2D : public Field, public FieldData {
   }
   const BoutReal& operator()(int jx, int jy, int UNUSED(jz)) const {
     return operator()(jx, jy);
+  }
+
+  BoutReal& operator()(const SingleDataIterator &i) {
+      //return data[i.rgn[i.icount]/i.nz];
+      return data[i.icount/i.nz];
+  }
+
+  const BoutReal& operator()(const SingleDataIterator &i) const {
+      return data[i.rgn[i.icount]/i.nz];
+      //return data[i.icount/i.nz];
+//////    if ( (nz & (nz-1)) != 0 ) {
+///      return data[i.index%nz];
+//////    } else {
+//////      return data[i.index&(nz-1)];
+//////    }
+///    if ( (nz & (nz-1)) == 0 ) {
+///      return data[i.i&(nz-1)];
+///    } else {
+///      return data[i.i%nz];
+///      //return data(i.x,i.y);
+///    }
+  }
+
+  const BoutReal& operator[](const SingleDataIterator &i) const {
+      return data[i.rgn[i.icount]/i.nz];
+      //return data[i.i/i.nz];
+//////    if ( (nz & (nz-1)) != 0 ) {
+///      return data[i.index%nz];
+//////    } else {
+//////      return data[i.index&(nz-1)];
+//////    }
+///    if ( (nz & (nz-1)) == 0 ) {
+///      return data[i.i&(nz-1)];
+///    } else {
+///      return data[i.i%nz];
+///      //return data(i.x,i.y);
+///    }
+  }
+
+  const BoutReal& operator[](const SingleDataIterator &i) {
+///    if ( (nz & (nz-1)) == 0 ) {
+      return data[i.i&(nz-1)];
+///    } else {
+///      return data[i.index%nz];
+///      //return data(i.x,i.y);
+///    }
   }
   
   Field2D & operator+=(const Field2D &rhs); ///< In-place addition. Copy-on-write used if data is shared
@@ -261,7 +317,7 @@ class Field2D : public Field, public FieldData {
   void setBoundaryTo(const Field2D &f2d); ///< Copy the boundary region
   
  private:
-  int nx, ny;      ///< Array sizes (from fieldmesh). These are valid only if fieldmesh is not null
+  int nx, ny, nz;      ///< Array sizes (from fieldmesh). These are valid only if fieldmesh is not null
   
   /// Internal data array. Handles allocation/freeing of memory
   Array<BoutReal> data;

@@ -40,6 +40,7 @@
 
 #include <math.h>
 #include <stdlib.h>
+#include <bout/scorepwrapper.hxx>
 
 /*******************************************************************************
 * Grad_par
@@ -47,18 +48,22 @@
 *******************************************************************************/
 
 const Field2D Grad_par(const Field2D &var, CELL_LOC outloc, DIFF_METHOD method) {
+  SCOREP0()
   return mesh->coordinates()->Grad_par(var, outloc, method);
 }
 
 const Field2D Grad_par(const Field2D &var, DIFF_METHOD method, CELL_LOC outloc) {
+  SCOREP0()
   return mesh->coordinates()->Grad_par(var, outloc, method);
 }
 
 const Field3D Grad_par(const Field3D &var, CELL_LOC outloc, DIFF_METHOD method) {
+  SCOREP0()
   return mesh->coordinates()->Grad_par(var, outloc, method);
 }
 
 const Field3D Grad_par(const Field3D &var, DIFF_METHOD method, CELL_LOC outloc) {
+  SCOREP0()
   return mesh->coordinates()->Grad_par(var, outloc, method);
 }
 
@@ -178,14 +183,17 @@ const Field3D Vpar_Grad_par(const Field &v, const Field &f, DIFF_METHOD method, 
 *******************************************************************************/
 
 const Field2D Div_par(const Field2D &f) {
+  SCOREP0()
   return mesh->coordinates()->Div_par(f);
 }
 
 const Field3D Div_par(const Field3D &f, CELL_LOC outloc, DIFF_METHOD method) {
+  SCOREP0()
   return mesh->coordinates()->Div_par(f, outloc, method);
 }
 
 const Field3D Div_par(const Field3D &f, DIFF_METHOD method, CELL_LOC outloc) {
+  SCOREP0()
   return mesh->coordinates()->Div_par(f, outloc, method);
 }
 
@@ -193,6 +201,7 @@ const Field3D Div_par(const Field3D &f, const Field3D &v) {
   // Parallel divergence, using velocities at cell boundaries
   // Note: Not guaranteed to be flux conservative
 
+  SCOREP0()
   Field3D result;
   result.allocate();
 
@@ -224,11 +233,13 @@ const Field3D Div_par(const Field3D &f, const Field3D &v) {
 //////// Flux methods
 
 const Field3D Div_par_flux(const Field3D &v, const Field3D &f, CELL_LOC outloc, DIFF_METHOD method) {
+  SCOREP0()
   Coordinates *metric = mesh->coordinates();
   return -metric->Bxy*FDDY(v, f/metric->Bxy, outloc, method)/sqrt(metric->g_22);
 }
 
 const Field3D Div_par_flux(const Field3D &v, const Field3D &f, DIFF_METHOD method, CELL_LOC outloc) {
+  SCOREP0()
   return Div_par_flux(v,f, outloc, method);
 }
 
@@ -629,6 +640,7 @@ const Field2D bracket(const Field2D &f, const Field2D &g, BRACKET_METHOD method,
 }
 
 const Field3D bracket(const Field3D &f, const Field2D &g, BRACKET_METHOD method, CELL_LOC outloc, Solver *solver) {
+  SCOREP0()
   TRACE("bracket(Field3D, Field2D)");
   
   Field3D result;
@@ -719,6 +731,47 @@ const Field3D bracket(const Field3D &f, const Field2D &g, BRACKET_METHOD method,
     
     break;
   }
+  case BRACKET_ARAKAWA_SDI: {
+    // Arakawa scheme for perpendicular flow, implemented using SingleDataIterator to allow OpenMP parallelization
+    TRACE("BRACKET_ARAKAWA_SDI");
+    
+    result.allocate();
+
+#pragma omp parallel
+    {
+    //output << "BRACKET_ARAKAWA_SDI "<<omp_get_thread_num()<<"\n";
+    for(SingleDataIterator i = result.sdi_region(RGN_NOBNDRY); !i.done(); ++i){
+///          // J++ = DDZ(f)*DDX(g) - DDX(f)*DDZ(g)
+///          BoutReal Jpp = 0.0 ;
+///          BoutReal Jpp =  f(i.zp())  ; 
+          BoutReal Jpp = ( (f(i.zp()) - f(i.zm()))*
+                                (g(i.xp()) - g(i.xm())) ) ;
+	                       // - (f(i.xp()) - f(i.xm()))*(g(i.zp()) - g(i.zm())) ) ; // this line is zero
+///          // J+x
+///          TRACE("After Jpp");
+///	  //output << "Jpx\n";
+///          BoutReal Jpx = 0.0 ;
+          BoutReal Jpx = ( g(i.xp())*(f(i.xpzp())-f(i.xpzm())) -
+                                g(i.xm())*(f(i.xmzp())-f(i.xmzm())) -
+                                g(i.zp())*(f(i.xpzp())-f(i.xmzp())) +
+                                g(i.zm())*(f(i.xpzm())-f(i.xmzm()))) ;
+///
+///          TRACE("After Jpx");
+///          // Jx+
+///	  //output << "Jxp\n";
+///          BoutReal Jxp = 0.0 ;
+          BoutReal Jxp = ( g(i.xpzp())*(f(i.zp())-f(i.xp())) -
+                                g(i.xmzm())*(f(i.xm())-f(i.zm())) -
+                                g(i.xmzp())*(f(i.zp())-f(i.xm())) +
+                                g(i.xpzm())*(f(i.xp())-f(i.zm()))) ;
+///          
+///          TRACE("After Jxp");
+///	  //output << "result\n";
+          result(i) = 0.25 * (Jpp + Jpx + Jxp) / ( 3.0 * metric->dx(i) * metric->dz);
+        }
+    }
+    break;
+  }
   case BRACKET_SIMPLE: {
     // Use a subset of terms for comparison to BOUT-06
     result = VDDX(DDZ(f), g);
@@ -734,6 +787,7 @@ const Field3D bracket(const Field3D &f, const Field2D &g, BRACKET_METHOD method,
 }
 
 const Field3D bracket(const Field2D &f, const Field3D &g, BRACKET_METHOD method, CELL_LOC outloc, Solver *solver) {
+  SCOREP0()
   TRACE("bracket(Field2D, Field3D)");
   
   Field3D result;
@@ -765,6 +819,7 @@ const Field3D bracket(const Field2D &f, const Field3D &g, BRACKET_METHOD method,
 }
 
 const Field3D bracket(const Field3D &f, const Field3D &g, BRACKET_METHOD method, CELL_LOC outloc, Solver *solver) {
+  SCOREP0()
   TRACE("Field3D, Field3D");
   
   Coordinates *metric = mesh->coordinates();
@@ -918,6 +973,37 @@ const Field3D bracket(const Field3D &f, const Field3D &g, BRACKET_METHOD method,
           result(jx, jy, jz) = (Jpp + Jpx + Jxp) * spacingFactor;
         }
       }
+    }
+    break;
+  }
+  case BRACKET_ARAKAWA_SDI: {
+    // Arakawa scheme for perpendicular flow, implemented using SingleDataIterator to allow OpenMP parallelization
+    
+    result.allocate();
+
+#pragma omp parallel
+    {
+    for(SingleDataIterator i = result.sdi_region(RGN_NOBNDRY); !i.done(); ++i){
+          // J++ = DDZ(f)*DDX(g) - DDX(f)*DDZ(g)
+          BoutReal Jpp = ( (f(i.zp()) - f(i.zm()))*
+                                (g(i.xp()) - g(i.xm())) -
+                                (f(i.xp()) - f(i.xm()))*
+                                (g(i.zp()) - g(i.zm())) ) ;
+          // J+x
+          BoutReal Jpx = ( g(i.xp())*(f(i.offset(1,0,1))-f(i.offset(1,0,-1))) -
+                                g(i.xm())*(f(i.offset(-1,0,1))-f(i.offset(-1,0,-1))) -
+                                g(i.zp())*(f(i.offset(1,0,1))-f(i.offset(-1,0,1))) +
+                                g(i.zm())*(f(i.offset(1,0,-1))-f(i.offset(-1,0,-1)))) ;
+
+          // Jx+
+          BoutReal Jxp = ( g(i.offset(1,0,1))*(f(i.zp())-f(i.xp())) -
+                                g(i.offset(-1,0,-1))*(f(i.xm())-f(i.zm())) -
+                                g(i.offset(-1,0,1))*(f(i.zp())-f(i.xm())) +
+                                g(i.offset(1,0,-1))*(f(i.xp())-f(i.zm()))) ;
+          
+          result(i) = 0.25 * (Jpp + Jpx + Jxp) / ( 3.0 * metric->dx(i) * metric->dz);
+          //result(i) = 0.25 * (Jpp + Jpx + Jxp) / ( 3.0 * metric->dx[i.i/i.nz] * metric->dz);
+        }
     }
     break;
   }
