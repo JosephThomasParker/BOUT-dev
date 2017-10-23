@@ -16,7 +16,7 @@
 *.out
 *.pyc
 *.status
-*.swp
+*.sw*
 *.toc
 .CVS/
 .DS_Store
