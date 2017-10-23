@@ -1,5 +1,6 @@
 
 #include <bout/physicsmodel.hxx>
+#include <bout/scorepwrapper.hxx>
 
 #include <invert_laplace.hxx>
 
@@ -27,6 +28,7 @@ protected:
   }
   
   int convective(BoutReal time) {
+    SCOREP0()
     // Non-stiff parts of the problem here
     // Here just the nonlinear advection
     
@@ -35,17 +37,21 @@ protected:
     mesh->communicate(phi, Vort, Ne);
     
     // Linear advection
-    ddt(Ne) = -bracket(phi, Ne0, BRACKET_ARAKAWA);
+    //ddt(Ne) = -bracket(phi, Ne0, BRACKET_ARAKAWA);
+    ddt(Ne) = -bracket(phi, Ne0, BRACKET_ARAKAWA_SDI);
     
     // Non-linear advection of density and vorticity
-    ddt(Ne) -= bracket(phi, Ne, BRACKET_ARAKAWA);
+    //ddt(Ne) -= bracket(phi, Ne, BRACKET_ARAKAWA);
+    ddt(Ne) -= bracket(phi, Ne, BRACKET_ARAKAWA_SDI);
     
-    ddt(Vort) = -bracket(phi, Vort, BRACKET_ARAKAWA);
+    //ddt(Vort) = -bracket(phi, Vort, BRACKET_ARAKAWA);
+    ddt(Vort) = -bracket(phi, Vort, BRACKET_ARAKAWA_SDI);
     
     return 0;
   }
   
   int diffusive(BoutReal time) {
+    SCOREP0()
     // Parallel dynamics treated implicitly
     
     // Solve for potential
