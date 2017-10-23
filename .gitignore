@@ -31,6 +31,7 @@ test*.py
 /include/pvode
 /lib/
 /manual/*.pdf
+/manual/tex_files/*.pdf
 /tools/vagrant/.vagrant
 *.gcda
 *.gcno
