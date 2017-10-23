@@ -14,6 +14,8 @@
 
 #include "parallel/fci.hxx"
 
+#include <bout/scorepwrapper.hxx>
+
 Mesh* Mesh::create(GridDataSource *s, Options *opt) {
   return MeshFactory::getInstance()->createMesh(s, opt);
 }
@@ -173,6 +175,7 @@ void Mesh::communicateXZ(FieldGroup &g) {
 }
 
 void Mesh::communicate(FieldGroup &g) {
+  SCOREP0()
   TRACE("Mesh::communicate(FieldGroup&)");
 
   // Send data

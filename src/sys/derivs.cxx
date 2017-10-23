@@ -51,6 +51,7 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include <bout/scorepwrapper.hxx>
 #include <output.hxx>
 
 /*******************************************************************************
@@ -85,14 +86,17 @@ const Field2D DDX(const Field2D &f) {
 ////////////// Y DERIVATIVE /////////////////
 
 const Field3D DDY(const Field3D &f, CELL_LOC outloc, DIFF_METHOD method) {
+  SCOREP0()
   return f.getMesh()->indexDDY(f,outloc, method) / f.getMesh()->coordinates()->dy;
 }
 
 const Field3D DDY(const Field3D &f, DIFF_METHOD method, CELL_LOC outloc) {
+  SCOREP0()
   return DDY(f, outloc, method);
 }
 
 const Field3D DDY(const Field3D &f, DIFF_METHOD method) {
+  SCOREP0()
   return DDY(f, CELL_DEFAULT, method);
 }
 
