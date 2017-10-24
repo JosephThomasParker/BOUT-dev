@@ -28,7 +28,9 @@ protected:
     result1 = 2.*a + b * c;
 
     SteadyClock start1 = steady_clock::now();
-    result1 = 2.*a + b * c;
+    for (int x=0;x<10;++x) {
+      result1 = 2.*a + b * c;
+    }
     Duration elapsed1 = steady_clock::now() - start1;
     
     // Using C loops
@@ -38,32 +40,49 @@ protected:
     BoutReal *bd = &b(0,0,0);
     BoutReal *cd = &c(0,0,0);
     SteadyClock start2 = steady_clock::now();
-    for(int i=0, iend=(mesh->LocalNx*mesh->LocalNy*mesh->LocalNz)-1; i != iend; i++) {
-      *rd = 2.*(*ad) + (*bd)*(*cd);
-      rd++;
-      ad++;
-      bd++;
-      cd++;
+    for (int x=0;x<10;++x) {
+      for(int i=0, iend=(mesh->LocalNx*mesh->LocalNy*mesh->LocalNz)-1; i != iend; i++) {
+	*rd = 2.*(*ad) + (*bd)*(*cd);
+	rd++;
+	ad++;
+	bd++;
+	cd++;
+      }
+      rd = &result2(0,0,0);
+      ad = &a(0,0,0);
+      bd = &b(0,0,0);
+      cd = &c(0,0,0);
     }
     Duration elapsed2 = steady_clock::now() - start2;
     
     // Template expressions
     SteadyClock start3 = steady_clock::now();
-    result3 = eval3D(add(mul(2,a), mul(b,c)));
+    for (int x=0;x<10;++x) {
+      result3 = eval3D(add(mul(2,a), mul(b,c)));
+    }
     Duration elapsed3 = steady_clock::now() - start3;
     
     // Range iterator
     result4.allocate();
     SteadyClock start4 = steady_clock::now();
-    for(auto i : result4)
-      result4[i] = 2.*a[i] + b[i] * c[i];
+    for (int x=0;x<10;++x) {
+      for(auto i : result4){
+	  result4[i] = 2.*a[i] + b[i] * c[i];
+      }
+    }
     Duration elapsed4 = steady_clock::now() - start4;
 
     // SingleDataIterator
     result5.allocate();
     SteadyClock start5 = steady_clock::now();
-    for(SingleDataIterator i = result5.sdi_region(RGN_ALL); !i.done(); ++i)
-      result5(i) = 2.*a(i) + b(i) * c(i);
+    for (int x=0;x<10;++x) {
+#pragma omp parallel
+      {
+      for(SingleDataIterator i = result5.sdi_region(RGN_ALL); !i.done(); ++i){
+	result5(i) = 2.*a(i) + b(i) * c(i); 
+      }
+      }
+    }
     Duration elapsed5 = steady_clock::now() - start5;
     
     output << "TIMING\n======\n";
